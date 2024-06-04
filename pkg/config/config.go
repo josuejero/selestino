@@ -1,36 +1,32 @@
-// pkg/config/config.go
-
 package config
 
 import (
-	"database/sql"
-	"fmt"
-	"log"
-
-	_ "github.com/lib/pq"
-)
-
-const (
-	host     = "localhost"
-	port     = 5432
-	user     = "selestino_user"
-	password = "your_password"
-	dbname   = "selestino"
+    "database/sql"
+    "fmt"
+    _ "github.com/lib/pq"
+    "log"
+    "os"
 )
 
 func Connect() *sql.DB {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
+    host := os.Getenv("DB_HOST")
+    port := os.Getenv("DB_PORT")
+    user := os.Getenv("DB_USER")
+    password := os.Getenv("DB_PASSWORD")
+    dbname := os.Getenv("DB_NAME")
 
-	db, err := sql.Open("postgres", psqlInfo)
-	if err != nil {
-		log.Fatalf("Error opening database: %v", err)
-	}
+    psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+        host, port, user, password, dbname)
 
-	if err := db.Ping(); err != nil {
-		log.Fatalf("Error connecting to the database: %v", err)
-	}
+    db, err := sql.Open("postgres", psqlInfo)
+    if err != nil {
+        log.Fatalf("Error opening database: %v", err)
+    }
 
-	fmt.Println("Successfully connected to the database!")
-	return db
+    if err := db.Ping(); err != nil {
+        log.Fatalf("Error connecting to the database: %v", err)
+    }
+
+    fmt.Println("Successfully connected to the database!")
+    return db
 }
