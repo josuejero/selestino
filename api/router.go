@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/josuejero/selestino/internal/models"
@@ -21,6 +22,7 @@ func InitializeRouter(db *sql.DB) *mux.Router {
 	// Define your API routes here
 	router.HandleFunc("/recipes", GetRecipes).Methods("GET")
 	router.HandleFunc("/recipes", AddRecipe).Methods("POST")
+	router.HandleFunc("/recipes/search", SearchRecipesByIngredients).Methods("GET")
 
 	return router
 }
@@ -51,4 +53,24 @@ func AddRecipe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+// SearchRecipesByIngredients handles the GET /recipes/search endpoint
+func SearchRecipesByIngredients(w http.ResponseWriter, r *http.Request) {
+	ingredientsParam := r.URL.Query().Get("ingredients")
+	if ingredientsParam == "" {
+		http.Error(w, "ingredients query parameter is required", http.StatusBadRequest)
+		return
+	}
+
+	ingredients := strings.Split(ingredientsParam, ",")
+
+	recipes, err := recipeRepo.SearchRecipesByIngredients(ingredients)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(recipes)
 }
