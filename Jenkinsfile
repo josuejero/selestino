@@ -4,6 +4,7 @@ pipeline {
     environment {
         DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
         KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials'
+        DOCKER_REPO = 'josuejero/selestino'
     }
 
     stages {
@@ -17,7 +18,7 @@ pipeline {
                     sh 'docker --version'
                     
                     // Build Docker image
-                    docker.build("selestino:latest")
+                    docker.build("${DOCKER_REPO}:latest")
                 }
             }
         }
@@ -33,7 +34,7 @@ pipeline {
 
                     // Login to Docker Hub and push the image
                     withDockerRegistry([url: 'https://index.docker.io/v1/', credentialsId: DOCKER_CREDENTIALS_ID]) {
-                        docker.image("selestino:latest").push()
+                        docker.image("${DOCKER_REPO}:latest").push()
                     }
                 }
             }
