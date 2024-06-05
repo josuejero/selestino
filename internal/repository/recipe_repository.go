@@ -5,7 +5,6 @@ package repository
 import (
 	"database/sql"
 	"fmt"
-	"strings"
 
 	"github.com/josuejero/selestino/internal/models"
 )
@@ -38,16 +37,18 @@ func (r *RecipeRepository) AddRecipe(recipe models.Recipe) error {
 	return err
 }
 
-func (r *RecipeRepository) SearchRecipesByIngredients(ingredients []string) ([]models.Recipe, error) {
-	query := "SELECT id, name, ingredients, instructions FROM recipes WHERE"
+func (r *RecipeRepository) SearchRecipesByCriteria(criteria map[string]string) ([]models.Recipe, error) {
+	query := "SELECT id, name, ingredients, instructions FROM recipes WHERE 1=1"
 
-	var conditions []string
-	for _, ingredient := range ingredients {
-		conditions = append(conditions, fmt.Sprintf(" ingredients LIKE '%%%s%%'", ingredient))
+	var args []interface{}
+	i := 1
+	for key, value := range criteria {
+		query += fmt.Sprintf(" AND %s LIKE $%d", key, i)
+		args = append(args, "%"+value+"%")
+		i++
 	}
-	query += strings.Join(conditions, " AND ")
 
-	rows, err := r.DB.Query(query)
+	rows, err := r.DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
