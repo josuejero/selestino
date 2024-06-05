@@ -1,0 +1,33 @@
+# k8s/selestino-deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: selestino
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: selestino
+  template:
+    metadata:
+      labels:
+        app: selestino
+    spec:
+      containers:
+        - name: selestino
+          image: selestino:latest
+          imagePullPolicy: Never  # Ensure Kubernetes uses the locally built image
+          env:
+            - name: DB_HOST
+              value: postgres
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_USER
+              value: selestino_user
+            - name: DB_PASSWORD
+              value: your_password
+            - name: DB_NAME
+              value: selestino
+          ports:
+            - containerPort: 8080
