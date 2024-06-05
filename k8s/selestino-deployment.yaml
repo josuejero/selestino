@@ -17,7 +17,6 @@ spec:
       containers:
         - name: selestino
           image: selestino:latest
-          imagePullPolicy: Never  # Ensure Kubernetes uses the locally built image
           env:
             - name: DB_HOST
               value: postgres
@@ -29,5 +28,20 @@ spec:
               value: your_password
             - name: DB_NAME
               value: selestino
+            - name: JWT_SECRET_KEY
+              value: my_secret_key
           ports:
             - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: selestino
+spec:
+  selector:
+    app: selestino
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: LoadBalancer
