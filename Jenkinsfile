@@ -10,6 +10,13 @@ pipeline {
         stage('Build') {
             steps {
                 script {
+                    // Ensure Docker context is set to default
+                    sh 'docker context use default'
+                    
+                    // Verify Docker version
+                    sh 'docker --version'
+                    
+                    // Build Docker image
                     docker.build("selestino:latest")
                 }
             }
@@ -21,7 +28,11 @@ pipeline {
                     echo 'Docker context:'
                     sh 'docker context ls'
 
-                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS_ID) {
+                    // Explicitly set Docker context to default
+                    sh 'docker context use default'
+
+                    // Login to Docker Hub and push the image
+                    withDockerRegistry([url: 'https://index.docker.io/v1/', credentialsId: DOCKER_CREDENTIALS_ID]) {
                         docker.image("selestino:latest").push()
                     }
                 }
@@ -30,7 +41,7 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                withKubeConfig(credentialsId: KUBECONFIG_CREDENTIALS_ID) {
+                withKubeConfig([credentialsId: KUBECONFIG_CREDENTIALS_ID]) {
                     sh 'kubectl apply -f k8s/postgres-deployment.yaml'
                     sh 'kubectl apply -f k8s/selestino-deployment.yaml'
                 }
