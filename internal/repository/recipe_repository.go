@@ -6,10 +6,11 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
+	"strconv"
 
 	"github.com/josuejero/selestino/internal/models"
 	"github.com/josuejero/selestino/pkg/config"
+	"github.com/olivere/elastic/v7"
 )
 
 type RecipeRepository struct {
@@ -55,37 +56,50 @@ func (r *RecipeRepository) GetAllRecipes() ([]models.Recipe, error) {
 }
 
 func (r *RecipeRepository) AddRecipe(recipe models.Recipe) error {
-	_, err := r.DB.Exec("INSERT INTO recipes (name, ingredients, instructions) VALUES ($1, $2, $3)",
+	result, err := r.DB.Exec("INSERT INTO recipes (name, ingredients, instructions) VALUES ($1, $2, $3)",
 		recipe.Name, recipe.Ingredients, recipe.Instructions)
+
+	if err != nil {
+		return err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	// Index document in Elasticsearch
+	err = config.IndexDocument("recipes", strconv.FormatInt(id, 10), recipe)
+	if err != nil {
+		return err
+	}
 
 	// Invalidate cache
 	ctx := context.Background()
 	config.DelRedis(ctx, "all_recipes")
 
-	return err
+	return nil
 }
 
 func (r *RecipeRepository) SearchRecipesByCriteria(criteria map[string]string) ([]models.Recipe, error) {
-	query := "SELECT id, name, ingredients, instructions FROM recipes WHERE 1=1"
-
-	var args []interface{}
-	i := 1
+	query := elastic.NewBoolQuery()
 	for key, value := range criteria {
-		query += fmt.Sprintf(" AND %s LIKE $%d", key, i)
-		args = append(args, "%"+value+"%")
-		i++
+		query = query.Must(elastic.NewMatchQuery(key, value))
 	}
 
-	rows, err := r.DB.Query(query, args...)
+	searchResult, err := config.ESClient.Search().
+		Index("recipes").
+		Query(query).
+		Do(context.Background())
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	var recipes []models.Recipe
-	for rows.Next() {
+	for _, hit := range searchResult.Hits.Hits {
 		var recipe models.Recipe
-		if err := rows.Scan(&recipe.ID, &recipe.Name, &recipe.Ingredients, &recipe.Instructions); err != nil {
+		err := json.Unmarshal(hit.Source, &recipe)
+		if err != nil {
 			return nil, err
 		}
 		recipes = append(recipes, recipe)

@@ -51,9 +51,11 @@ pipeline {
                 script {
                     // Apply Kubernetes configurations using kubectl
                     withKubeConfig([credentialsId: KUBECONFIG_CREDENTIALS_ID]) {
-                        sh 'kubectl apply -f k8s/redis-deployment.yaml'
+                        sh 'kubectl apply -f k8s/elasticsearch-deployment.yaml'
                         sh 'kubectl apply -f k8s/postgres-deployment.yaml'
                         sh 'kubectl apply -f k8s/selestino-deployment.yaml'
+                        sh 'kubectl apply -f k8s/redis-deployment.yaml'
+
                     }
                 }
             }

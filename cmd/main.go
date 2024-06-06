@@ -15,6 +15,7 @@ func main() {
 	defer db.Close()
 
 	config.InitRedis()
+	config.InitElasticsearch()
 
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 
