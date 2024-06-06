@@ -1,39 +1,40 @@
 // internal/repository/recipe_repository_test.go
 
-package repository
+package repository_test
 
 import (
 	"database/sql"
-	"log"
-	"os"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/josuejero/selestino/internal/models"
+	"github.com/josuejero/selestino/internal/repository"
 	"github.com/stretchr/testify/assert"
 )
 
-var repo *RecipeRepository
+var repo *repository.RecipeRepository
 var mock sqlmock.Sqlmock
 
-func TestMain(m *testing.M) {
+func setupRecipeRepo(t *testing.T) func() {
 	var db *sql.DB
 	var err error
 
 	db, mock, err = sqlmock.New()
 	if err != nil {
-		log.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 
-	repo = &RecipeRepository{DB: db}
+	repo = &repository.RecipeRepository{DB: db}
 
-	code := m.Run()
-
-	db.Close()
-	os.Exit(code)
+	return func() {
+		db.Close()
+	}
 }
 
 func TestGetAllRecipes(t *testing.T) {
+	teardown := setupRecipeRepo(t)
+	defer teardown()
+
 	rows := sqlmock.NewRows([]string{"id", "name", "ingredients", "instructions"}).
 		AddRow(1, "Ceviche", "Fish, Lemon, Salt", "Mix ingredients and serve")
 
@@ -47,6 +48,9 @@ func TestGetAllRecipes(t *testing.T) {
 }
 
 func TestAddRecipe(t *testing.T) {
+	teardown := setupRecipeRepo(t)
+	defer teardown()
+
 	recipe := models.Recipe{
 		Name:         "Ceviche",
 		Ingredients:  "Fish, Lemon, Salt",
@@ -60,15 +64,18 @@ func TestAddRecipe(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestSearchRecipesByIngredients(t *testing.T) {
+func TestSearchRecipesByCriteria(t *testing.T) {
+	teardown := setupRecipeRepo(t)
+	defer teardown()
+
 	rows := sqlmock.NewRows([]string{"id", "name", "ingredients", "instructions"}).
 		AddRow(1, "Ceviche", "Fish, Lemon, Salt", "Mix ingredients and serve")
 
-	ingredients := []string{"Fish", "Lemon"}
-	query := "SELECT id, name, ingredients, instructions FROM recipes WHERE ingredients LIKE '%Fish%' AND ingredients LIKE '%Lemon%'"
-	mock.ExpectQuery(query).WillReturnRows(rows)
+	criteria := map[string]string{"ingredients": "Fish", "name": "Ceviche"}
+	query := "SELECT id, name, ingredients, instructions FROM recipes WHERE 1=1 AND ingredients LIKE \\$1 AND name LIKE \\$2"
+	mock.ExpectQuery(query).WithArgs("%Fish%", "%Ceviche%").WillReturnRows(rows)
 
-	recipes, err := repo.SearchRecipesByIngredients(ingredients)
+	recipes, err := repo.SearchRecipesByCriteria(criteria)
 	assert.NoError(t, err)
 	assert.Len(t, recipes, 1)
 	assert.Equal(t, "Ceviche", recipes[0].Name)
