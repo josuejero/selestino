@@ -1,4 +1,4 @@
-// main.go
+// cmd/main.go
 
 package main
 
@@ -13,6 +13,8 @@ import (
 func main() {
 	db := config.Connect()
 	defer db.Close()
+
+	config.InitRedis()
 
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 
