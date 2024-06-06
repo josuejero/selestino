@@ -14,13 +14,17 @@ import (
 	"github.com/josuejero/selestino/internal/repository"
 )
 
-var recipeRepo *repository.RecipeRepository
 var userRepo *repository.UserRepository
+var recipeRepo *repository.RecipeRepository
 
 func InitializeRouter(db *sql.DB) *mux.Router {
-	recipeRepo = &repository.RecipeRepository{DB: db}
 	userRepo = &repository.UserRepository{DB: db}
+	recipeRepo = &repository.RecipeRepository{DB: db}
+
 	router := mux.NewRouter()
+
+	// Define rate limiter
+	rateLimiter := NewRateLimiter(1000, 10, time.Minute)
 
 	// Define your API routes here
 	router.HandleFunc("/recipes", GetRecipes).Methods("GET")
@@ -29,6 +33,9 @@ func InitializeRouter(db *sql.DB) *mux.Router {
 
 	router.HandleFunc("/register", RegisterUser).Methods("POST")
 	router.HandleFunc("/login", LoginUser).Methods("POST")
+
+	// Apply rate limiter middleware to all routes
+	router.Use(rateLimiter.Limit)
 
 	// Apply role-based middleware to protected routes
 	adminRoutes := router.PathPrefix("/admin").Subrouter()
@@ -95,46 +102,4 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		Value:   tokenString,
 		Expires: expirationTime,
 	})
-}
-
-func GetRecipes(w http.ResponseWriter, r *http.Request) {
-	recipes, err := recipeRepo.GetAllRecipes()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(recipes)
-}
-
-func AddRecipe(w http.ResponseWriter, r *http.Request) {
-	var recipe models.Recipe
-	if err := json.NewDecoder(r.Body).Decode(&recipe); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if err := recipeRepo.AddRecipe(recipe); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-}
-
-func SearchRecipesByCriteria(w http.ResponseWriter, r *http.Request) {
-	criteria := make(map[string]string)
-	for key, values := range r.URL.Query() {
-		criteria[key] = values[0]
-	}
-
-	recipes, err := recipeRepo.SearchRecipesByCriteria(criteria)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(recipes)
 }
