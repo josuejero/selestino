@@ -34,6 +34,8 @@ spec:
               value: selestino
             - name: JWT_SECRET_KEY
               value: my_secret_key
+            - name: REDIS_ADDR
+              value: redis:6379
           ports:
             - containerPort: 8080
 ---
