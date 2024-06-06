@@ -36,6 +36,8 @@ spec:
               value: my_secret_key
             - name: REDIS_ADDR
               value: redis:6379
+            - name: ELASTICSEARCH_URL
+              value: http://elasticsearch:9200
           ports:
             - containerPort: 8080
 ---
