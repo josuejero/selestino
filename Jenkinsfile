@@ -1,5 +1,3 @@
-// Jenkinsfile
-
 pipeline {
     agent any
 
@@ -7,6 +5,10 @@ pipeline {
         DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
         KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials'
         DOCKER_REPO = 'josuejero/selestino'
+    }
+
+    triggers {
+        githubPush()
     }
 
     stages {
