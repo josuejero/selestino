@@ -30,6 +30,11 @@ func InitializeRouter(db *sql.DB) *mux.Router {
 	router.HandleFunc("/register", RegisterUser).Methods("POST")
 	router.HandleFunc("/login", LoginUser).Methods("POST")
 
+	// Apply role-based middleware to protected routes
+	adminRoutes := router.PathPrefix("/admin").Subrouter()
+	adminRoutes.Use(RoleBasedAuthorization("admin"))
+	adminRoutes.HandleFunc("/recipes", AddRecipe).Methods("POST")
+
 	return router
 }
 
@@ -37,6 +42,7 @@ var jwtKey = []byte("my_secret_key")
 
 type Claims struct {
 	Username string `json:"username"`
+	Role     string `json:"role"`
 	jwt.StandardClaims
 }
 
@@ -62,7 +68,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authenticated, err := userRepo.AuthenticateUser(user.Username, user.Password)
+	authenticatedUser, authenticated, err := userRepo.AuthenticateUser(user.Username, user.Password)
 	if err != nil || !authenticated {
 		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 		return
@@ -70,7 +76,8 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
-		Username: user.Username,
+		Username: authenticatedUser.Username,
+		Role:     authenticatedUser.Role,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},
