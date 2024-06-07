@@ -1,5 +1,3 @@
-// internal/models/recipe.go
-
 package models
 
 type Recipe struct {

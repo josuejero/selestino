@@ -1,5 +1,3 @@
-// internal/repository/mock_recipe_repository.go
-
 package repository
 
 import (

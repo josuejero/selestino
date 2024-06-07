@@ -1,5 +1,3 @@
-// api/token_helper.go
-
 package api
 
 import (

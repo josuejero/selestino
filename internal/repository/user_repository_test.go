@@ -1,5 +1,3 @@
-// internal/repository/user_repository_test.go
-
 package repository_test
 
 import (

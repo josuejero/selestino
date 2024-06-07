@@ -1,5 +1,3 @@
-// api/rate_limiter_test.go
-
 package api_test
 
 import (

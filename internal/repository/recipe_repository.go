@@ -1,5 +1,3 @@
-// internal/repository/recipe_repository.go
-
 package repository
 
 import (

@@ -34,6 +34,13 @@ pipeline {
             }
         }
 
+        stage('Test') {
+            steps {
+                sh 'go test -v ./... -coverprofile=coverage.out'
+                sh 'go tool cover -html=coverage.out -o coverage.html'
+            }
+        }
+
         stage('Deploy') {
             steps {
                 script {
@@ -44,6 +51,16 @@ pipeline {
                         sh 'kubectl apply -f k8s/redis-deployment.yaml'
                     }
                 }
+            }
+        }
+
+        stage('Publish Coverage Report') {
+            steps {
+                publishHTML(target: [
+                    reportDir: '.',
+                    reportFiles: 'coverage.html',
+                    reportName: 'Coverage Report'
+                ])
             }
         }
     }
