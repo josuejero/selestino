@@ -1,6 +1,4 @@
 ===== ./cmd/main.go =====
-// cmd/main.go
-
 package main
 
 import (
@@ -28,8 +26,6 @@ func main() {
 	}
 }
 ===== ./dockerfile =====
-# Dockerfile
-
 # Use the official Golang image as the base image
 FROM golang:1.20-alpine
 
@@ -54,8 +50,6 @@ EXPOSE 8080
 # Set the entry point to run the application
 CMD ["./selestino"]
 ===== ./k8s/selestino-deployment.yaml =====
-# k8s/selestino-deployment.yaml
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -110,8 +104,6 @@ spec:
       targetPort: 8080
   type: LoadBalancer
 ===== ./k8s/elasticsearch-deployment.yaml =====
-# k8s/elasticsearch-deployment.yaml
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -147,8 +139,6 @@ spec:
       port: 9200
       targetPort: 9200
 ===== ./k8s/postgres-deployment.yaml =====
-# k8s/postgres-deployment.yaml
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -194,8 +184,6 @@ spec:
       port: 5432
       targetPort: 5432
 ===== ./k8s/redis-deployment.yaml =====
-# k8s/redis-deployment.yaml
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -235,8 +223,6 @@ CREATE TABLE IF NOT EXISTS recipes (
     instructions TEXT NOT NULL
 );
 ===== ./internal/repository/recipe_repository.go =====
-// internal/repository/recipe_repository.go
-
 package repository
 
 import (
@@ -353,8 +339,6 @@ func (r *RecipeRepository) SearchRecipesByCriteria(criteria map[string]string) (
 	return recipes, nil
 }
 ===== ./internal/repository/mock_recipe_repository.go =====
-// internal/repository/mock_recipe_repository.go
-
 package repository
 
 import (
@@ -381,8 +365,6 @@ func (m *MockRecipeRepository) SearchRecipesByCriteria(criteria map[string]strin
 	return args.Get(0).([]models.Recipe), args.Error(1)
 }
 ===== ./internal/repository/mock_db.go =====
-// internal/repository/mock_db.go
-
 package repository
 
 import (
@@ -411,8 +393,6 @@ func (m *MockDB) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	return arguments.Get(0).(*sql.Rows), arguments.Error(1)
 }
 ===== ./internal/repository/user_repository_test.go =====
-// internal/repository/user_repository_test.go
-
 package repository_test
 
 import (
@@ -496,8 +476,6 @@ func TestAuthenticateUser(t *testing.T) {
 	}
 }
 ===== ./internal/repository/user_repository.go =====
-// internal/repository/user_repository.go
-
 package repository
 
 import (
@@ -593,8 +571,6 @@ func TestGetAllRecipes(t *testing.T) {
 	assert.Equal(t, "Ceviche", recipes[0].Name)
 }
 ===== ./internal/models/user.go =====
-// internal/models/user.go
-
 package models
 
 type User struct {
@@ -604,8 +580,6 @@ type User struct {
 	Role     string `json:"role"`
 }
 ===== ./internal/models/recipe.go =====
-// internal/models/recipe.go
-
 package models
 
 type Recipe struct {
@@ -843,6 +817,18 @@ pipeline {
             }
         }
 
+        stage('Test') {
+            steps {
+                script {
+                    docker.image('golang:1.20-alpine').inside {
+                        sh 'apk add --no-cache git'
+                        sh 'go test -v ./... -coverprofile=coverage.out'
+                        sh 'go tool cover -html=coverage.out -o coverage.html'
+                    }
+                }
+            }
+        }
+
         stage('Deploy') {
             steps {
                 script {
@@ -853,6 +839,16 @@ pipeline {
                         sh 'kubectl apply -f k8s/redis-deployment.yaml'
                     }
                 }
+            }
+        }
+
+        stage('Publish Coverage Report') {
+            steps {
+                publishHTML(target: [
+                    reportDir: '.',
+                    reportFiles: 'coverage.html',
+                    reportName: 'Coverage Report'
+                ])
             }
         }
     }
@@ -934,8 +930,6 @@ func TestSearchRecipesByCriteria(t *testing.T) {
 	assert.NotEmpty(t, recipes)
 }
 ===== ./api/middleware_test.go =====
-// api/middleware_test.go
-
 package api_test
 
 import (
@@ -974,8 +968,6 @@ func TestRoleBasedAuthorization(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, rr.Code)
 }
 ===== ./api/rate_limiter.go =====
-// api/rate_limiter.go
-
 package api
 
 import (
@@ -1154,8 +1146,6 @@ func RoleBasedAuthorization(roles ...string) mux.MiddlewareFunc {
 	}
 }
 ===== ./api/rate_limiter_test.go =====
-// api/rate_limiter_test.go
-
 package api_test
 
 import (
@@ -1194,8 +1184,6 @@ func TestRateLimiter(t *testing.T) {
 	assert.Equal(t, http.StatusTooManyRequests, rr.Code)
 }
 ===== ./api/token_helper.go =====
-// api/token_helper.go
-
 package api
 
 import (
@@ -1223,8 +1211,6 @@ func GenerateToken(username, role string) (string, error) {
 	return tokenString, nil
 }
 ===== ./api/router.go =====
-// api/router.go
-
 package api
 
 import (
@@ -1358,12 +1344,12 @@ services:
     environment:
       discovery.type: single-node
     ports:
-      - "9201:9200"  # Use 9201 on the host and map it to 9200 in the container
+      - "9200:9200"
 
   jenkins:
     image: jenkins/jenkins:lts
     ports:
-      - "8082:8080"  # Change host port to 8082 to avoid conflict
+      - "8082:8080"
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
@@ -1371,7 +1357,7 @@ services:
   app:
     build: .
     ports:
-      - "8081:8080"  # Change host port to 8081 to avoid conflict
+      - "8081:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -1386,7 +1372,7 @@ services:
       DB_PASSWORD: your_password
       DB_NAME: selestino
       REDIS_ADDR: redis:6379
-      ELASTICSEARCH_URL: http://elasticsearch:9200  # This remains unchanged since it's the internal container port
+      ELASTICSEARCH_URL: http://elasticsearch:9200
 
 volumes:
   postgres_data:
