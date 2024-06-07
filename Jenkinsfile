@@ -15,9 +15,14 @@ pipeline {
         stage('Build') {
             steps {
                 script {
+                    // Ensure Docker context is set to default
                     sh 'docker context use default'
+                    
+                    // Verify Docker version
                     sh 'docker --version'
-                    docker.build("${DOCKER_REPO}:latest")
+                    
+                    // Build Docker image
+                    def customImage = docker.build("${DOCKER_REPO}:latest")
                 }
             }
         }
@@ -25,10 +30,15 @@ pipeline {
         stage('Push') {
             steps {
                 script {
+                    echo 'Docker context:'
                     sh 'docker context ls'
+
+                    // Explicitly set Docker context to default
                     sh 'docker context use default'
-                    withDockerRegistry([url: 'https://index.docker.io/v1/', credentialsId: DOCKER_CREDENTIALS_ID]) {
-                        docker.image("${DOCKER_REPO}:latest").push()
+
+                    // Login to Docker Hub and push the image
+                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS_ID) {
+                        customImage.push()
                     }
                 }
             }
@@ -37,6 +47,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
+                    // Apply Kubernetes configurations using kubectl
                     withKubeConfig([credentialsId: KUBECONFIG_CREDENTIALS_ID]) {
                         sh 'kubectl apply -f k8s/elasticsearch-deployment.yaml'
                         sh 'kubectl apply -f k8s/postgres-deployment.yaml'
