@@ -5,6 +5,8 @@ pipeline {
         DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
         KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials'
         DOCKER_REPO = 'josuejero/selestino'
+        // Add customImage variable if required
+        // customImage = 'your-custom-image:latest'
     }
 
     triggers {
@@ -15,14 +17,9 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    // Ensure Docker context is set to default
                     sh 'docker context use default'
-                    
-                    // Verify Docker version
                     sh 'docker --version'
-                    
-                    // Build Docker image
-                    def customImage = docker.build("${DOCKER_REPO}:latest")
+                    docker.build("${DOCKER_REPO}:latest")
                 }
             }
         }
@@ -30,15 +27,10 @@ pipeline {
         stage('Push') {
             steps {
                 script {
-                    echo 'Docker context:'
                     sh 'docker context ls'
-
-                    // Explicitly set Docker context to default
                     sh 'docker context use default'
-
-                    // Login to Docker Hub and push the image
-                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS_ID) {
-                        customImage.push()
+                    withDockerRegistry([url: 'https://index.docker.io/v1/', credentialsId: DOCKER_CREDENTIALS_ID]) {
+                        docker.image("${DOCKER_REPO}:latest").push()
                     }
                 }
             }
@@ -47,7 +39,6 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // Apply Kubernetes configurations using kubectl
                     withKubeConfig([credentialsId: KUBECONFIG_CREDENTIALS_ID]) {
                         sh 'kubectl apply -f k8s/elasticsearch-deployment.yaml'
                         sh 'kubectl apply -f k8s/postgres-deployment.yaml'

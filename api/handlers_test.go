@@ -1,5 +1,3 @@
-// api/handlers_test.go
-
 package api_test
 
 import (
