@@ -1,5 +1,3 @@
-// api/handlers.go
-
 package api
 
 import (
