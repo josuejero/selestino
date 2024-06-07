@@ -4,6 +4,7 @@ package repository
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/josuejero/selestino/internal/models"
 	"golang.org/x/crypto/bcrypt"
@@ -25,11 +26,22 @@ func (r *UserRepository) CreateUser(user models.User) error {
 
 func (r *UserRepository) AuthenticateUser(username, password string) (models.User, bool, error) {
 	var user models.User
-	err := r.DB.QueryRow("SELECT id, username, password, role FROM users WHERE username = $1", username).Scan(&user.ID, &user.Username, &user.Password, &user.Role)
+	row := r.DB.QueryRow("SELECT username, password, role FROM users WHERE username = $1", username)
+	err := row.Scan(&user.Username, &user.Password, &user.Role)
 	if err != nil {
-		return models.User{}, false, err
+		return user, false, err
 	}
 
+	// Print the user details and the password being compared
+	fmt.Printf("Username: %s, Hashed Password: %s\n", user.Username, user.Password)
+	fmt.Printf("Password to Compare: %s\n", password)
+
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	return user, err == nil, err
+	if err != nil {
+		// Print the error from bcrypt
+		fmt.Printf("Password Comparison Error: %v\n", err)
+		return user, false, nil
+	}
+
+	return user, true, nil
 }

@@ -1,0 +1,804 @@
+// cmd/main.go
+
+package main
+
+import (
+	"net/http"
+
+	"github.com/josuejero/selestino/api"
+	"github.com/josuejero/selestino/pkg/config"
+	"github.com/sirupsen/logrus"
+)
+
+func main() {
+	db := config.Connect()
+	defer db.Close()
+
+	config.InitRedis()
+	config.InitElasticsearch()
+
+	logrus.SetFormatter(&logrus.JSONFormatter{})
+
+	router := api.InitializeRouter(db)
+
+	logrus.Info("Starting server on :8080")
+	if err := http.ListenAndServe(":8080", router); err != nil {
+		logrus.Fatalf("could not start server: %v", err)
+	}
+}
+// internal/repository/recipe_repository.go
+
+package repository
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"strconv"
+
+	"github.com/josuejero/selestino/internal/models"
+	"github.com/josuejero/selestino/pkg/config"
+	"github.com/olivere/elastic/v7"
+)
+
+type RecipeRepository struct {
+	DB *sql.DB
+}
+
+func (r *RecipeRepository) GetAllRecipes() ([]models.Recipe, error) {
+	ctx := context.Background()
+	cacheKey := "all_recipes"
+
+	// Try to get the result from Redis cache
+	cachedResult, err := config.GetRedis(ctx, cacheKey)
+	if err == nil && cachedResult != "" {
+		var recipes []models.Recipe
+		if err := json.Unmarshal([]byte(cachedResult), &recipes); err == nil {
+			return recipes, nil
+		}
+	}
+
+	// If cache miss, query the database
+	rows, err := r.DB.Query("SELECT id, name, ingredients, instructions FROM recipes")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var recipes []models.Recipe
+	for rows.Next() {
+		var recipe models.Recipe
+		if err := rows.Scan(&recipe.ID, &recipe.Name, &recipe.Ingredients, &recipe.Instructions); err != nil {
+			return nil, err
+		}
+		recipes = append(recipes, recipe)
+	}
+
+	// Cache the result in Redis
+	serializedRecipes, err := json.Marshal(recipes)
+	if err == nil {
+		config.SetRedis(ctx, cacheKey, serializedRecipes)
+	}
+
+	return recipes, nil
+}
+
+func (r *RecipeRepository) AddRecipe(recipe models.Recipe) error {
+	result, err := r.DB.Exec("INSERT INTO recipes (name, ingredients, instructions) VALUES ($1, $2, $3)",
+		recipe.Name, recipe.Ingredients, recipe.Instructions)
+
+	if err != nil {
+		return err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	// Index document in Elasticsearch
+	err = config.IndexDocument("recipes", strconv.FormatInt(id, 10), recipe)
+	if err != nil {
+		return err
+	}
+
+	// Invalidate cache
+	ctx := context.Background()
+	config.DelRedis(ctx, "all_recipes")
+
+	return nil
+}
+
+func (r *RecipeRepository) SearchRecipesByCriteria(criteria map[string]string) ([]models.Recipe, error) {
+	query := elastic.NewBoolQuery()
+	for key, value := range criteria {
+		query = query.Must(elastic.NewMatchQuery(key, value))
+	}
+
+	searchResult, err := config.ESClient.Search().
+		Index("recipes").
+		Query(query).
+		Do(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	var recipes []models.Recipe
+	for _, hit := range searchResult.Hits.Hits {
+		var recipe models.Recipe
+		err := json.Unmarshal(hit.Source, &recipe)
+		if err != nil {
+			return nil, err
+		}
+		recipes = append(recipes, recipe)
+	}
+
+	return recipes, nil
+}
+package repository
+
+import (
+	"database/sql"
+
+	"github.com/stretchr/testify/mock"
+)
+
+type MockDB struct {
+	mock.Mock
+	*sql.DB
+}
+
+func (m *MockDB) Exec(query string, args ...interface{}) (sql.Result, error) {
+	arguments := m.Called(append([]interface{}{query}, args...)...)
+	return arguments.Get(0).(sql.Result), arguments.Error(1)
+}
+
+func (m *MockDB) QueryRow(query string, args ...interface{}) *sql.Row {
+	arguments := m.Called(append([]interface{}{query}, args...)...)
+	return arguments.Get(0).(*sql.Row)
+}
+
+func (m *MockDB) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	arguments := m.Called(append([]interface{}{query}, args...)...)
+	return arguments.Get(0).(*sql.Rows), arguments.Error(1)
+}
+package repository
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/josuejero/selestino/internal/models"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestCreateUser(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	repo := &UserRepository{DB: db}
+	user := models.User{Username: "testuser", Password: "testpass", Role: "user"}
+
+	mock.ExpectExec("INSERT INTO users").WithArgs(user.Username, sqlmock.AnyArg(), user.Role).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	err = repo.CreateUser(user)
+	assert.NoError(t, err, "Error should be nil")
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestAuthenticateUser(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	repo := &UserRepository{DB: db}
+	user := models.User{Username: "testuser", Password: "$2a$10$7EqJtq98hPqEX7fNZaFWoOa1rYx0t1Vun8Zw1RTAdks6Kc0u9tx.W", Role: "user"}
+
+	rows := sqlmock.NewRows([]string{"username", "password", "role"}).
+		AddRow(user.Username, user.Password, user.Role)
+	mock.ExpectQuery("SELECT username, password, role FROM users WHERE username = \\$1").
+		WithArgs("testuser").WillReturnRows(rows)
+
+	returnedUser, authenticated, err := repo.AuthenticateUser("testuser", "testpass")
+	assert.NoError(t, err, "Error should be nil")
+
+	// Print the hashed password and the result of the comparison
+	fmt.Printf("Stored Password: %s\n", user.Password)
+	fmt.Printf("Returned User: %+v\n", returnedUser)
+	fmt.Printf("Authenticated: %v\n", authenticated)
+
+	if !authenticated {
+		t.Errorf("Expected authentication to be true, got false")
+	}
+	assert.True(t, authenticated, "User should be authenticated")
+	assert.Equal(t, user.Username, returnedUser.Username, "Usernames should match")
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+// internal/repository/user_repository.go
+
+package repository
+
+import (
+	"database/sql"
+	"fmt"
+
+	"github.com/josuejero/selestino/internal/models"
+	"golang.org/x/crypto/bcrypt"
+)
+
+type UserRepository struct {
+	DB *sql.DB
+}
+
+func (r *UserRepository) CreateUser(user models.User) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.DB.Exec("INSERT INTO users (username, password, role) VALUES ($1, $2, $3)", user.Username, string(hashedPassword), user.Role)
+	return err
+}
+
+func (r *UserRepository) AuthenticateUser(username, password string) (models.User, bool, error) {
+	var user models.User
+	row := r.DB.QueryRow("SELECT username, password, role FROM users WHERE username = $1", username)
+	err := row.Scan(&user.Username, &user.Password, &user.Role)
+	if err != nil {
+		return user, false, err
+	}
+
+	// Print the user details and the password being compared
+	fmt.Printf("Username: %s, Hashed Password: %s\n", user.Username, user.Password)
+	fmt.Printf("Password to Compare: %s\n", password)
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		// Print the error from bcrypt
+		fmt.Printf("Password Comparison Error: %v\n", err)
+		return user, false, nil
+	}
+
+	return user, true, nil
+}
+package repository_test
+
+import (
+	"database/sql"
+	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/josuejero/selestino/internal/repository"
+	"github.com/josuejero/selestino/pkg/config"
+	"github.com/stretchr/testify/assert"
+)
+
+var repo *repository.RecipeRepository
+var mock sqlmock.Sqlmock
+
+func setupRecipeRepo(t *testing.T) func() {
+	var db *sql.DB
+	var err error
+
+	db, mock, err = sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+
+	config.InitRedis() // Initialize Redis client for the test
+
+	repo = &repository.RecipeRepository{DB: db}
+
+	return func() {
+		db.Close()
+	}
+}
+
+func TestGetAllRecipes(t *testing.T) {
+	teardown := setupRecipeRepo(t)
+	defer teardown()
+
+	rows := sqlmock.NewRows([]string{"id", "name", "ingredients", "instructions"}).
+		AddRow(1, "Ceviche", "Fish, Lemon, Salt", "Mix ingredients and serve")
+
+	mock.ExpectQuery("SELECT id, name, ingredients, instructions FROM recipes").
+		WillReturnRows(rows)
+
+	recipes, err := repo.GetAllRecipes()
+	assert.NoError(t, err)
+	assert.Len(t, recipes, 1)
+	assert.Equal(t, "Ceviche", recipes[0].Name)
+}
+// internal/models/user.go
+
+package models
+
+type User struct {
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Role     string `json:"role"`
+}
+// internal/models/recipe.go
+
+package models
+
+type Recipe struct {
+	ID           int    `json:"id"`
+	Name         string `json:"name"`
+	Ingredients  string `json:"ingredients"`
+	Instructions string `json:"instructions"`
+}
+// api/middleware_test.go
+
+package api
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestRoleBasedAuthorization(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	adminToken, _ := GenerateToken("admin_user", "admin")
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.AddCookie(&http.Cookie{Name: "token", Value: adminToken})
+
+	rr := httptest.NewRecorder()
+	router := mux.NewRouter()
+	router.Handle("/", RoleBasedAuthorization("admin")(handler))
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	userToken, _ := GenerateToken("regular_user", "user")
+	req, _ = http.NewRequest("GET", "/", nil)
+	req.AddCookie(&http.Cookie{Name: "token", Value: userToken})
+
+	rr = httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusForbidden, rr.Code)
+}
+// api/rate_limiter.go
+
+package api
+
+import (
+	"net/http"
+	"sync"
+	"time"
+
+	lru "github.com/hashicorp/golang-lru"
+)
+
+type RateLimiter struct {
+	requests     *lru.Cache
+	mutex        sync.Mutex
+	rateLimit    int
+	rateLimitDur time.Duration
+}
+
+func NewRateLimiter(size int, rateLimit int, rateLimitDur time.Duration) *RateLimiter {
+	cache, _ := lru.New(size)
+	return &RateLimiter{
+		requests:     cache,
+		rateLimit:    rateLimit,
+		rateLimitDur: rateLimitDur,
+	}
+}
+
+func (rl *RateLimiter) Limit(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rl.mutex.Lock()
+		defer rl.mutex.Unlock()
+
+		ip := r.RemoteAddr
+		if val, ok := rl.requests.Get(ip); ok {
+			reqInfo := val.(*requestInfo)
+			if time.Since(reqInfo.timestamp) < rl.rateLimitDur {
+				if reqInfo.count >= rl.rateLimit {
+					http.Error(w, "Too many requests", http.StatusTooManyRequests)
+					return
+				}
+				reqInfo.count++
+			} else {
+				reqInfo.count = 1
+				reqInfo.timestamp = time.Now()
+			}
+		} else {
+			rl.requests.Add(ip, &requestInfo{count: 1, timestamp: time.Now()})
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+type requestInfo struct {
+	count     int
+	timestamp time.Time
+}
+// api/handlers.go
+
+package api
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/josuejero/selestino/internal/models"
+)
+
+func GetRecipes(w http.ResponseWriter, r *http.Request) {
+	recipes, err := recipeRepo.GetAllRecipes()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(recipes)
+}
+
+func AddRecipe(w http.ResponseWriter, r *http.Request) {
+	var recipe models.Recipe
+	if err := json.NewDecoder(r.Body).Decode(&recipe); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := recipeRepo.AddRecipe(recipe); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func SearchRecipesByCriteria(w http.ResponseWriter, r *http.Request) {
+	criteria := make(map[string]string)
+	for key, values := range r.URL.Query() {
+		criteria[key] = values[0]
+	}
+
+	recipes, err := recipeRepo.SearchRecipesByCriteria(criteria)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(recipes)
+}
+// api/middleware.go
+
+package api
+
+import (
+	"net/http"
+	"strings"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/mux"
+)
+
+func RoleBasedAuthorization(roles ...string) mux.MiddlewareFunc {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cookie, err := r.Cookie("token")
+			if err != nil {
+				if err == http.ErrNoCookie {
+					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+					return
+				}
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			tokenStr := cookie.Value
+			claims := &Claims{}
+			token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
+				return jwtKey, nil
+			})
+
+			if err != nil {
+				if err == jwt.ErrSignatureInvalid {
+					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+					return
+				}
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			if !token.Valid {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			authorized := false
+			for _, role := range roles {
+				if strings.EqualFold(claims.Role, role) {
+					authorized = true
+					break
+				}
+			}
+
+			if !authorized {
+				http.Error(w, "Forbidden", http.StatusForbidden)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+// api/token_helper.go
+
+package api
+
+import (
+	"time"
+
+	"github.com/dgrijalva/jwt-go"
+)
+
+func GenerateToken(username, role string) (string, error) {
+	expirationTime := time.Now().Add(24 * time.Hour)
+	claims := &Claims{
+		Username: username,
+		Role:     role,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
+}
+// api/router.go
+
+package api
+
+import (
+	"database/sql"
+	"encoding/json"
+	"net/http"
+	"time"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/mux"
+	"github.com/josuejero/selestino/internal/models"
+	"github.com/josuejero/selestino/internal/repository"
+)
+
+var userRepo *repository.UserRepository
+var recipeRepo *repository.RecipeRepository
+
+func InitializeRouter(db *sql.DB) *mux.Router {
+	userRepo = &repository.UserRepository{DB: db}
+	recipeRepo = &repository.RecipeRepository{DB: db}
+
+	router := mux.NewRouter()
+
+	// Define rate limiter
+	rateLimiter := NewRateLimiter(1000, 10, time.Minute)
+
+	// Define your API routes here
+	router.HandleFunc("/recipes", GetRecipes).Methods("GET")
+	router.HandleFunc("/recipes", AddRecipe).Methods("POST")
+	router.HandleFunc("/recipes/search", SearchRecipesByCriteria).Methods("GET")
+
+	router.HandleFunc("/register", RegisterUser).Methods("POST")
+	router.HandleFunc("/login", LoginUser).Methods("POST")
+
+	// Apply rate limiter middleware to all routes
+	router.Use(rateLimiter.Limit)
+
+	// Apply role-based middleware to protected routes
+	adminRoutes := router.PathPrefix("/admin").Subrouter()
+	adminRoutes.Use(RoleBasedAuthorization("admin"))
+	adminRoutes.HandleFunc("/recipes", AddRecipe).Methods("POST")
+
+	return router
+}
+
+var jwtKey = []byte("my_secret_key")
+
+type Claims struct {
+	Username string `json:"username"`
+	Role     string `json:"role"`
+	jwt.StandardClaims
+}
+
+func RegisterUser(w http.ResponseWriter, r *http.Request) {
+	var user models.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := userRepo.CreateUser(user); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func LoginUser(w http.ResponseWriter, r *http.Request) {
+	var user models.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	authenticatedUser, authenticated, err := userRepo.AuthenticateUser(user.Username, user.Password)
+	if err != nil || !authenticated {
+		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		return
+	}
+
+	expirationTime := time.Now().Add(24 * time.Hour)
+	claims := &Claims{
+		Username: authenticatedUser.Username,
+		Role:     authenticatedUser.Role,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:    "token",
+		Value:   tokenString,
+		Expires: expirationTime,
+	})
+}
+package config
+
+import (
+    "database/sql"
+    "fmt"
+    _ "github.com/lib/pq"
+    "log"
+    "os"
+)
+
+func Connect() *sql.DB {
+    host := os.Getenv("DB_HOST")
+    port := os.Getenv("DB_PORT")
+    user := os.Getenv("DB_USER")
+    password := os.Getenv("DB_PASSWORD")
+    dbname := os.Getenv("DB_NAME")
+
+    psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+        host, port, user, password, dbname)
+
+    db, err := sql.Open("postgres", psqlInfo)
+    if err != nil {
+        log.Fatalf("Error opening database: %v", err)
+    }
+
+    if err := db.Ping(); err != nil {
+        log.Fatalf("Error connecting to the database: %v", err)
+    }
+
+    fmt.Println("Successfully connected to the database!")
+    return db
+}
+// pkg/config/cache.go
+
+package config
+
+import (
+	"context"
+	"os"
+
+	"github.com/go-redis/redis/v8"
+)
+
+var RedisClient *redis.Client
+
+func InitRedis() {
+	RedisClient = redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("REDIS_ADDR"),
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+}
+
+func GetRedisClient() *redis.Client {
+	return RedisClient
+}
+
+func SetRedis(ctx context.Context, key string, value interface{}) error {
+	return RedisClient.Set(ctx, key, value, 0).Err()
+}
+
+func GetRedis(ctx context.Context, key string) (string, error) {
+	return RedisClient.Get(ctx, key).Result()
+}
+
+func DelRedis(ctx context.Context, key string) error {
+	return RedisClient.Del(ctx, key).Err()
+}
+// pkg/config/search.go
+
+package config
+
+import (
+	"context"
+	"log"
+	"os"
+
+	"github.com/olivere/elastic/v7"
+)
+
+var ESClient *elastic.Client
+
+func InitElasticsearch() {
+	var err error
+	ESClient, err = elastic.NewClient(
+		elastic.SetURL(os.Getenv("ELASTICSEARCH_URL")),
+		elastic.SetSniff(false),
+	)
+	if err != nil {
+		log.Fatalf("Error initializing Elasticsearch client: %v", err)
+	}
+}
+
+func CreateIndex(index string, mapping string) error {
+	ctx := context.Background()
+	exists, err := ESClient.IndexExists(index).Do(ctx)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		_, err = ESClient.CreateIndex(index).BodyString(mapping).Do(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func IndexDocument(index string, id string, doc interface{}) error {
+	ctx := context.Background()
+	_, err := ESClient.Index().
+		Index(index).
+		Id(id).
+		BodyJson(doc).
+		Do(ctx)
+	return err
+}
