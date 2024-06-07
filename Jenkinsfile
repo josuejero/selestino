@@ -37,8 +37,8 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    docker.image('golang:1.20-alpine').inside {
-                        sh 'apk --no-cache add --allow-untrusted --root /root --no-network git'
+                    docker.image('golang:1.20-alpine').inside('-u root:root') {
+                        sh 'apk --no-cache add git'
                         sh 'go test -v ./... -coverprofile=coverage.out'
                         sh 'go tool cover -html=coverage.out -o coverage.html'
                     }
