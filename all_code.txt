@@ -1,3 +1,4 @@
+===== ./cmd/main.go =====
 // cmd/main.go
 
 package main
@@ -26,6 +27,33 @@ func main() {
 		logrus.Fatalf("could not start server: %v", err)
 	}
 }
+===== ./dockerfile =====
+# Dockerfile
+
+# Use the official Golang image as the base image
+FROM golang:1.20-alpine
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the go.mod and go.sum files
+COPY go.mod go.sum ./
+
+# Download the Go module dependencies
+RUN go mod download
+
+# Copy the rest of the application code
+COPY . .
+
+# Build the Go application
+RUN go build -o selestino ./cmd
+
+# Expose the application port
+EXPOSE 8080
+
+# Set the entry point to run the application
+CMD ["./selestino"]
+===== ./k8s/selestino-deployment.yaml =====
 # k8s/selestino-deployment.yaml
 
 apiVersion: apps/v1
@@ -81,6 +109,7 @@ spec:
       port: 8080
       targetPort: 8080
   type: LoadBalancer
+===== ./k8s/elasticsearch-deployment.yaml =====
 # k8s/elasticsearch-deployment.yaml
 
 apiVersion: apps/v1
@@ -117,6 +146,7 @@ spec:
     - protocol: TCP
       port: 9200
       targetPort: 9200
+===== ./k8s/postgres-deployment.yaml =====
 # k8s/postgres-deployment.yaml
 
 apiVersion: apps/v1
@@ -163,6 +193,7 @@ spec:
     - protocol: TCP
       port: 5432
       targetPort: 5432
+===== ./k8s/redis-deployment.yaml =====
 # k8s/redis-deployment.yaml
 
 apiVersion: apps/v1
@@ -196,12 +227,14 @@ spec:
     - protocol: TCP
       port: 6379
       targetPort: 6379
+===== ./initdb/init.sql =====
 CREATE TABLE IF NOT EXISTS recipes (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     ingredients TEXT NOT NULL,
     instructions TEXT NOT NULL
 );
+===== ./internal/repository/recipe_repository.go =====
 // internal/repository/recipe_repository.go
 
 package repository
@@ -319,6 +352,7 @@ func (r *RecipeRepository) SearchRecipesByCriteria(criteria map[string]string) (
 
 	return recipes, nil
 }
+===== ./internal/repository/mock_recipe_repository.go =====
 // internal/repository/mock_recipe_repository.go
 
 package repository
@@ -346,6 +380,7 @@ func (m *MockRecipeRepository) SearchRecipesByCriteria(criteria map[string]strin
 	args := m.Called(criteria)
 	return args.Get(0).([]models.Recipe), args.Error(1)
 }
+===== ./internal/repository/mock_db.go =====
 // internal/repository/mock_db.go
 
 package repository
@@ -375,6 +410,7 @@ func (m *MockDB) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	arguments := m.Called(append([]interface{}{query}, args...)...)
 	return arguments.Get(0).(*sql.Rows), arguments.Error(1)
 }
+===== ./internal/repository/user_repository_test.go =====
 // internal/repository/user_repository_test.go
 
 package repository_test
@@ -459,6 +495,7 @@ func TestAuthenticateUser(t *testing.T) {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
+===== ./internal/repository/user_repository.go =====
 // internal/repository/user_repository.go
 
 package repository
@@ -506,6 +543,7 @@ func (r *UserRepository) AuthenticateUser(username, password string) (models.Use
 
 	return user, true, nil
 }
+===== ./internal/repository/recipe_repository_test.go =====
 package repository_test
 
 import (
@@ -554,6 +592,7 @@ func TestGetAllRecipes(t *testing.T) {
 	assert.Len(t, recipes, 1)
 	assert.Equal(t, "Ceviche", recipes[0].Name)
 }
+===== ./internal/models/user.go =====
 // internal/models/user.go
 
 package models
@@ -564,6 +603,7 @@ type User struct {
 	Password string `json:"password"`
 	Role     string `json:"role"`
 }
+===== ./internal/models/recipe.go =====
 // internal/models/recipe.go
 
 package models
@@ -574,6 +614,7 @@ type Recipe struct {
 	Ingredients  string `json:"ingredients"`
 	Instructions string `json:"instructions"`
 }
+===== ./README.md =====
 # Selestino
 
 Selestino is a recipe website where users can input available ingredients and get relevant recipes for Peruvian dishes. This project leverages a variety of technologies including Golang, PostgreSQL, Docker, Kubernetes, and Jenkins for CI/CD.
@@ -765,6 +806,60 @@ Contributions are welcome! Please follow these steps:
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+===== ./Jenkinsfile =====
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
+        KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials'
+        DOCKER_REPO = 'josuejero/selestino'
+        // Add customImage variable if required
+        // customImage = 'your-custom-image:latest'
+    }
+
+    triggers {
+        githubPush()
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                script {
+                    sh 'docker context use default'
+                    sh 'docker --version'
+                    docker.build("${DOCKER_REPO}:latest")
+                }
+            }
+        }
+
+        stage('Push') {
+            steps {
+                script {
+                    sh 'docker context ls'
+                    sh 'docker context use default'
+                    withDockerRegistry([url: 'https://index.docker.io/v1/', credentialsId: DOCKER_CREDENTIALS_ID]) {
+                        docker.image("${DOCKER_REPO}:latest").push()
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    withKubeConfig([credentialsId: KUBECONFIG_CREDENTIALS_ID]) {
+                        sh 'kubectl apply -f k8s/elasticsearch-deployment.yaml'
+                        sh 'kubectl apply -f k8s/postgres-deployment.yaml'
+                        sh 'kubectl apply -f k8s/selestino-deployment.yaml'
+                        sh 'kubectl apply -f k8s/redis-deployment.yaml'
+                    }
+                }
+            }
+        }
+    }
+}
+===== ./api/handlers_test.go =====
 package api_test
 
 import (
@@ -840,6 +935,7 @@ func TestSearchRecipesByCriteria(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, recipes)
 }
+===== ./api/middleware_test.go =====
 // api/middleware_test.go
 
 package api_test
@@ -879,6 +975,7 @@ func TestRoleBasedAuthorization(t *testing.T) {
 
 	assert.Equal(t, http.StatusForbidden, rr.Code)
 }
+===== ./api/rate_limiter.go =====
 // api/rate_limiter.go
 
 package api
@@ -937,6 +1034,7 @@ type requestInfo struct {
 	count     int
 	timestamp time.Time
 }
+===== ./api/handlers.go =====
 package api
 
 import (
@@ -994,6 +1092,7 @@ func SearchRecipesByCriteria(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(recipes)
 }
+===== ./api/middleware.go =====
 // api/middleware.go
 
 package api
@@ -1056,6 +1155,7 @@ func RoleBasedAuthorization(roles ...string) mux.MiddlewareFunc {
 		})
 	}
 }
+===== ./api/rate_limiter_test.go =====
 // api/rate_limiter_test.go
 
 package api_test
@@ -1095,6 +1195,7 @@ func TestRateLimiter(t *testing.T) {
 	limitedHandler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusTooManyRequests, rr.Code)
 }
+===== ./api/token_helper.go =====
 // api/token_helper.go
 
 package api
@@ -1123,6 +1224,7 @@ func GenerateToken(username, role string) (string, error) {
 
 	return tokenString, nil
 }
+===== ./api/router.go =====
 // api/router.go
 
 package api
@@ -1227,6 +1329,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		Expires: expirationTime,
 	})
 }
+===== ./docker-compose.yml =====
 version: '3.8'
 
 services:
@@ -1263,6 +1366,7 @@ services:
 
 volumes:
   postgres_data:
+===== ./jenkins-deployment.yaml =====
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -1313,6 +1417,10 @@ spec:
     targetPort: 50000
   selector:
     app: jenkins
+===== ./.vscode/settings.json =====
+{
+}===== ./.vscode/tasks.json =====
+===== ./pkg/config/config.go =====
 package config
 
 import (
@@ -1345,6 +1453,7 @@ func Connect() *sql.DB {
     fmt.Println("Successfully connected to the database!")
     return db
 }
+===== ./pkg/config/cache.go =====
 // pkg/config/cache.go
 
 package config
@@ -1381,6 +1490,7 @@ func GetRedis(ctx context.Context, key string) (string, error) {
 func DelRedis(ctx context.Context, key string) error {
 	return RedisClient.Del(ctx, key).Err()
 }
+===== ./pkg/config/search.go =====
 // pkg/config/search.go
 
 package config

@@ -5,8 +5,6 @@ pipeline {
         DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
         KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials'
         DOCKER_REPO = 'josuejero/selestino'
-        // Add customImage variable if required
-        // customImage = 'your-custom-image:latest'
     }
 
     triggers {
