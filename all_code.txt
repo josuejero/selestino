@@ -1,0 +1,1514 @@
+===== ./api/handlers.go =====
+// api/handlers.go
+
+package api
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/josuejero/selestino/internal/models"
+	"github.com/josuejero/selestino/internal/repository"
+)
+
+var recipeRepo repository.RecipeRepositoryInterface
+
+func SetRecipeRepo(r repository.RecipeRepositoryInterface) {
+	recipeRepo = r
+}
+
+func GetRecipes(w http.ResponseWriter, r *http.Request) {
+	recipes, err := recipeRepo.GetAllRecipes()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(recipes)
+}
+
+func AddRecipe(w http.ResponseWriter, r *http.Request) {
+	var recipe models.Recipe
+	if err := json.NewDecoder(r.Body).Decode(&recipe); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := recipeRepo.AddRecipe(recipe); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func SearchRecipesByCriteria(w http.ResponseWriter, r *http.Request) {
+	criteria := make(map[string]string)
+	for key, values := range r.URL.Query() {
+		criteria[key] = values[0]
+	}
+
+	recipes, err := recipeRepo.SearchRecipesByCriteria(criteria)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(recipes)
+}
+===== ./api/handlers_test.go =====
+// api/handlers_test.go
+
+package api_test
+
+import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/josuejero/selestino/api"
+	"github.com/josuejero/selestino/internal/models"
+	"github.com/josuejero/selestino/internal/repository"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+)
+
+var mockRecipeRepo *repository.MockRecipeRepository
+
+func setup() {
+	mockRecipeRepo = &repository.MockRecipeRepository{}
+	api.SetRecipeRepo(mockRecipeRepo)
+}
+
+func TestGetRecipes(t *testing.T) {
+	setup()
+
+	mockRecipeRepo.On("GetAllRecipes").Return([]models.Recipe{
+		{Name: "Ceviche", Ingredients: "Fish, Lemon, Salt", Instructions: "Mix ingredients and serve"},
+	}, nil)
+
+	req, _ := http.NewRequest("GET", "/recipes", nil)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(api.GetRecipes)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	var recipes []models.Recipe
+	err := json.NewDecoder(rr.Body).Decode(&recipes)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, recipes)
+}
+
+func TestAddRecipe(t *testing.T) {
+	setup()
+
+	mockRecipeRepo.On("AddRecipe", mock.AnythingOfType("models.Recipe")).Return(nil)
+
+	recipe := models.Recipe{Name: "Test Recipe", Ingredients: "Test Ingredients", Instructions: "Test Instructions"}
+	payload, _ := json.Marshal(recipe)
+	req, _ := http.NewRequest("POST", "/recipes", bytes.NewBuffer(payload))
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(api.AddRecipe)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusCreated, rr.Code)
+}
+
+func TestSearchRecipesByCriteria(t *testing.T) {
+	setup()
+
+	mockRecipeRepo.On("SearchRecipesByCriteria", mock.AnythingOfType("map[string]string")).Return([]models.Recipe{
+		{Name: "Test Recipe", Ingredients: "Test Ingredients", Instructions: "Test Instructions"},
+	}, nil)
+
+	req, _ := http.NewRequest("GET", "/recipes/search?ingredients=Test+Ingredients", nil)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(api.SearchRecipesByCriteria)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	var recipes []models.Recipe
+	err := json.NewDecoder(rr.Body).Decode(&recipes)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, recipes)
+}
+===== ./api/middleware.go =====
+// api/middleware.go
+
+package api
+
+import (
+	"net/http"
+	"strings"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/mux"
+)
+
+func RoleBasedAuthorization(roles ...string) mux.MiddlewareFunc {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cookie, err := r.Cookie("token")
+			if err != nil {
+				if err == http.ErrNoCookie {
+					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+					return
+				}
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			tokenStr := cookie.Value
+			claims := &Claims{}
+			token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
+				return jwtKey, nil
+			})
+
+			if err != nil {
+				if err == jwt.ErrSignatureInvalid {
+					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+					return
+				}
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			if !token.Valid {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			authorized := false
+			for _, role := range roles {
+				if strings.EqualFold(claims.Role, role) {
+					authorized = true
+					break
+				}
+			}
+
+			if !authorized {
+				http.Error(w, "Forbidden", http.StatusForbidden)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+===== ./api/middleware_test.go =====
+// api/middleware_test.go
+
+package api_test
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/gorilla/mux"
+	"github.com/josuejero/selestino/api"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestRoleBasedAuthorization(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	adminToken, _ := api.GenerateToken("admin_user", "admin")
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.AddCookie(&http.Cookie{Name: "token", Value: adminToken})
+
+	rr := httptest.NewRecorder()
+	router := mux.NewRouter()
+	router.Handle("/", api.RoleBasedAuthorization("admin")(handler))
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	userToken, _ := api.GenerateToken("regular_user", "user")
+	req, _ = http.NewRequest("GET", "/", nil)
+	req.AddCookie(&http.Cookie{Name: "token", Value: userToken})
+
+	rr = httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusForbidden, rr.Code)
+}
+===== ./api/rate_limiter.go =====
+// api/rate_limiter.go
+
+package api
+
+import (
+	"net/http"
+	"sync"
+	"time"
+
+	lru "github.com/hashicorp/golang-lru"
+)
+
+type RateLimiter struct {
+	requests     *lru.Cache
+	mutex        sync.Mutex
+	rateLimit    int
+	rateLimitDur time.Duration
+}
+
+func NewRateLimiter(size int, rateLimit int, rateLimitDur time.Duration) *RateLimiter {
+	cache, _ := lru.New(size)
+	return &RateLimiter{
+		requests:     cache,
+		rateLimit:    rateLimit,
+		rateLimitDur: rateLimitDur,
+	}
+}
+
+func (rl *RateLimiter) Limit(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rl.mutex.Lock()
+		defer rl.mutex.Unlock()
+
+		ip := r.RemoteAddr
+		if val, ok := rl.requests.Get(ip); ok {
+			reqInfo := val.(*requestInfo)
+			if time.Since(reqInfo.timestamp) < rl.rateLimitDur {
+				if reqInfo.count >= rl.rateLimit {
+					http.Error(w, "Too many requests", http.StatusTooManyRequests)
+					return
+				}
+				reqInfo.count++
+			} else {
+				reqInfo.count = 1
+				reqInfo.timestamp = time.Now()
+			}
+		} else {
+			rl.requests.Add(ip, &requestInfo{count: 1, timestamp: time.Now()})
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+type requestInfo struct {
+	count     int
+	timestamp time.Time
+}
+===== ./api/router.go =====
+// api/router.go
+
+package api
+
+import (
+	"database/sql"
+	"encoding/json"
+	"net/http"
+	"time"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/mux"
+	"github.com/josuejero/selestino/internal/models"
+	"github.com/josuejero/selestino/internal/repository"
+)
+
+var userRepo *repository.UserRepository
+
+func InitializeRouter(db *sql.DB) *mux.Router {
+	userRepo = &repository.UserRepository{DB: db}
+	SetRecipeRepo(&repository.RecipeRepository{DB: db})
+
+	router := mux.NewRouter()
+
+	// Define rate limiter
+	rateLimiter := NewRateLimiter(1000, 10, time.Minute)
+
+	// Define your API routes here
+	router.HandleFunc("/recipes", GetRecipes).Methods("GET")
+	router.HandleFunc("/recipes", AddRecipe).Methods("POST")
+	router.HandleFunc("/recipes/search", SearchRecipesByCriteria).Methods("GET")
+
+	router.HandleFunc("/register", RegisterUser).Methods("POST")
+	router.HandleFunc("/login", LoginUser).Methods("POST")
+
+	// Apply rate limiter middleware to all routes
+	router.Use(rateLimiter.Limit)
+
+	// Apply role-based middleware to protected routes
+	adminRoutes := router.PathPrefix("/admin").Subrouter()
+	adminRoutes.Use(RoleBasedAuthorization("admin"))
+	adminRoutes.HandleFunc("/recipes", AddRecipe).Methods("POST")
+
+	return router
+}
+
+var jwtKey = []byte("my_secret_key")
+
+type Claims struct {
+	Username string `json:"username"`
+	Role     string `json:"role"`
+	jwt.StandardClaims
+}
+
+func RegisterUser(w http.ResponseWriter, r *http.Request) {
+	var user models.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := userRepo.CreateUser(user); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func LoginUser(w http.ResponseWriter, r *http.Request) {
+	var user models.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	authenticatedUser, authenticated, err := userRepo.AuthenticateUser(user.Username, user.Password)
+	if err != nil || !authenticated {
+		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		return
+	}
+
+	expirationTime := time.Now().Add(24 * time.Hour)
+	claims := &Claims{
+		Username: authenticatedUser.Username,
+		Role:     authenticatedUser.Role,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:    "token",
+		Value:   tokenString,
+		Expires: expirationTime,
+	})
+}
+===== ./api/token_helper.go =====
+// api/token_helper.go
+
+package api
+
+import (
+	"time"
+
+	"github.com/dgrijalva/jwt-go"
+)
+
+func GenerateToken(username, role string) (string, error) {
+	expirationTime := time.Now().Add(24 * time.Hour)
+	claims := &Claims{
+		Username: username,
+		Role:     role,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
+}
+===== ./cmd/main.go =====
+// cmd/main.go
+
+package main
+
+import (
+	"net/http"
+
+	"github.com/josuejero/selestino/api"
+	"github.com/josuejero/selestino/pkg/config"
+	"github.com/sirupsen/logrus"
+)
+
+func main() {
+	db := config.Connect()
+	defer db.Close()
+
+	config.InitRedis()
+	config.InitElasticsearch()
+
+	logrus.SetFormatter(&logrus.JSONFormatter{})
+
+	router := api.InitializeRouter(db)
+
+	logrus.Info("Starting server on :8080")
+	if err := http.ListenAndServe(":8080", router); err != nil {
+		logrus.Fatalf("could not start server: %v", err)
+	}
+}
+===== ./docker-compose.yml =====
+version: '3.8'
+
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: selestino  # Correct database name
+      POSTGRES_USER: selestino_user
+      POSTGRES_PASSWORD: your_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d selestino -U selestino_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: selestino_user
+      DB_PASSWORD: your_password
+      DB_NAME: selestino  # Must match POSTGRES_DB
+
+volumes:
+  postgres_data:
+===== ./dockerfile =====
+# Dockerfile
+
+# Use the official Golang image as the base image
+FROM golang:1.20-alpine
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the go.mod and go.sum files
+COPY go.mod go.sum ./
+
+# Download the Go module dependencies
+RUN go mod download
+
+# Copy the rest of the application code
+COPY . .
+
+# Build the Go application
+RUN go build -o selestino ./cmd
+
+# Expose the application port
+EXPOSE 8080
+
+# Set the entry point to run the application
+CMD ["./selestino"]
+===== ./initdb/init.sql =====
+CREATE TABLE IF NOT EXISTS recipes (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    ingredients TEXT NOT NULL,
+    instructions TEXT NOT NULL
+);
+===== ./internal/models/recipe.go =====
+// internal/models/recipe.go
+
+package models
+
+type Recipe struct {
+	ID           int    `json:"id"`
+	Name         string `json:"name"`
+	Ingredients  string `json:"ingredients"`
+	Instructions string `json:"instructions"`
+}
+===== ./internal/models/user.go =====
+// internal/models/user.go
+
+package models
+
+type User struct {
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Role     string `json:"role"`
+}
+===== ./internal/repository/mock_db.go =====
+// internal/repository/mock_db.go
+
+package repository
+
+import (
+	"database/sql"
+
+	"github.com/stretchr/testify/mock"
+)
+
+type MockDB struct {
+	mock.Mock
+	*sql.DB
+}
+
+func (m *MockDB) Exec(query string, args ...interface{}) (sql.Result, error) {
+	arguments := m.Called(append([]interface{}{query}, args...)...)
+	return arguments.Get(0).(sql.Result), arguments.Error(1)
+}
+
+func (m *MockDB) QueryRow(query string, args ...interface{}) *sql.Row {
+	arguments := m.Called(append([]interface{}{query}, args...)...)
+	return arguments.Get(0).(*sql.Row)
+}
+
+func (m *MockDB) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	arguments := m.Called(append([]interface{}{query}, args...)...)
+	return arguments.Get(0).(*sql.Rows), arguments.Error(1)
+}
+===== ./internal/repository/mock_recipe_repository.go =====
+// internal/repository/mock_recipe_repository.go
+
+package repository
+
+import (
+	"github.com/josuejero/selestino/internal/models"
+	"github.com/stretchr/testify/mock"
+)
+
+type MockRecipeRepository struct {
+	mock.Mock
+}
+
+func (m *MockRecipeRepository) GetAllRecipes() ([]models.Recipe, error) {
+	args := m.Called()
+	return args.Get(0).([]models.Recipe), args.Error(1)
+}
+
+func (m *MockRecipeRepository) AddRecipe(recipe models.Recipe) error {
+	args := m.Called(recipe)
+	return args.Error(0)
+}
+
+func (m *MockRecipeRepository) SearchRecipesByCriteria(criteria map[string]string) ([]models.Recipe, error) {
+	args := m.Called(criteria)
+	return args.Get(0).([]models.Recipe), args.Error(1)
+}
+===== ./internal/repository/recipe_repository.go =====
+// internal/repository/recipe_repository.go
+
+package repository
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"strconv"
+
+	"github.com/josuejero/selestino/internal/models"
+	"github.com/josuejero/selestino/pkg/config"
+	"github.com/olivere/elastic/v7"
+)
+
+type RecipeRepositoryInterface interface {
+	GetAllRecipes() ([]models.Recipe, error)
+	AddRecipe(recipe models.Recipe) error
+	SearchRecipesByCriteria(criteria map[string]string) ([]models.Recipe, error)
+}
+
+type RecipeRepository struct {
+	DB *sql.DB
+}
+
+var _ RecipeRepositoryInterface = &RecipeRepository{}
+
+func (r *RecipeRepository) GetAllRecipes() ([]models.Recipe, error) {
+	ctx := context.Background()
+	cacheKey := "all_recipes"
+
+	// Try to get the result from Redis cache
+	cachedResult, err := config.GetRedis(ctx, cacheKey)
+	if err == nil && cachedResult != "" {
+		var recipes []models.Recipe
+		if err := json.Unmarshal([]byte(cachedResult), &recipes); err == nil {
+			return recipes, nil
+		}
+	}
+
+	// If cache miss, query the database
+	rows, err := r.DB.Query("SELECT id, name, ingredients, instructions FROM recipes")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var recipes []models.Recipe
+	for rows.Next() {
+		var recipe models.Recipe
+		if err := rows.Scan(&recipe.ID, &recipe.Name, &recipe.Ingredients, &recipe.Instructions); err != nil {
+			return nil, err
+		}
+		recipes = append(recipes, recipe)
+	}
+
+	// Cache the result in Redis
+	serializedRecipes, err := json.Marshal(recipes)
+	if err == nil {
+		config.SetRedis(ctx, cacheKey, serializedRecipes)
+	}
+
+	return recipes, nil
+}
+
+func (r *RecipeRepository) AddRecipe(recipe models.Recipe) error {
+	result, err := r.DB.Exec("INSERT INTO recipes (name, ingredients, instructions) VALUES ($1, $2, $3)",
+		recipe.Name, recipe.Ingredients, recipe.Instructions)
+
+	if err != nil {
+		return err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	// Index document in Elasticsearch
+	err = config.IndexDocument("recipes", strconv.FormatInt(id, 10), recipe)
+	if err != nil {
+		return err
+	}
+
+	// Invalidate cache
+	ctx := context.Background()
+	config.DelRedis(ctx, "all_recipes")
+
+	return nil
+}
+
+func (r *RecipeRepository) SearchRecipesByCriteria(criteria map[string]string) ([]models.Recipe, error) {
+	query := elastic.NewBoolQuery()
+	for key, value := range criteria {
+		query = query.Must(elastic.NewMatchQuery(key, value))
+	}
+
+	searchResult, err := config.ESClient.Search().
+		Index("recipes").
+		Query(query).
+		Do(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	var recipes []models.Recipe
+	for _, hit := range searchResult.Hits.Hits {
+		var recipe models.Recipe
+		err := json.Unmarshal(hit.Source, &recipe)
+		if err != nil {
+			return nil, err
+		}
+		recipes = append(recipes, recipe)
+	}
+
+	return recipes, nil
+}
+===== ./internal/repository/recipe_repository_test.go =====
+package repository_test
+
+import (
+	"database/sql"
+	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/josuejero/selestino/internal/repository"
+	"github.com/josuejero/selestino/pkg/config"
+	"github.com/stretchr/testify/assert"
+)
+
+var repo *repository.RecipeRepository
+var mock sqlmock.Sqlmock
+
+func setupRecipeRepo(t *testing.T) func() {
+	var db *sql.DB
+	var err error
+
+	db, mock, err = sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+
+	config.InitRedis() // Initialize Redis client for the test
+
+	repo = &repository.RecipeRepository{DB: db}
+
+	return func() {
+		db.Close()
+	}
+}
+
+func TestGetAllRecipes(t *testing.T) {
+	teardown := setupRecipeRepo(t)
+	defer teardown()
+
+	rows := sqlmock.NewRows([]string{"id", "name", "ingredients", "instructions"}).
+		AddRow(1, "Ceviche", "Fish, Lemon, Salt", "Mix ingredients and serve")
+
+	mock.ExpectQuery("SELECT id, name, ingredients, instructions FROM recipes").
+		WillReturnRows(rows)
+
+	recipes, err := repo.GetAllRecipes()
+	assert.NoError(t, err)
+	assert.Len(t, recipes, 1)
+	assert.Equal(t, "Ceviche", recipes[0].Name)
+}
+===== ./internal/repository/user_repository.go =====
+// internal/repository/user_repository.go
+
+package repository
+
+import (
+	"database/sql"
+	"log"
+
+	"github.com/josuejero/selestino/internal/models"
+	"golang.org/x/crypto/bcrypt"
+)
+
+type UserRepository struct {
+	DB *sql.DB
+}
+
+func (r *UserRepository) CreateUser(user models.User) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		log.Printf("Error generating password hash: %v", err)
+		return err
+	}
+
+	_, err = r.DB.Exec("INSERT INTO users (username, password, role) VALUES ($1, $2, $3)", user.Username, string(hashedPassword), user.Role)
+	if err != nil {
+		log.Printf("Error inserting user into database: %v", err)
+	}
+	return err
+}
+
+func (r *UserRepository) AuthenticateUser(username, password string) (models.User, bool, error) {
+	var user models.User
+	row := r.DB.QueryRow("SELECT username, password, role FROM users WHERE username = $1", username)
+	err := row.Scan(&user.Username, &user.Password, &user.Role)
+	if err != nil {
+		log.Printf("Error fetching user from database: %v", err)
+		return user, false, err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		log.Printf("Error comparing password hash: %v", err)
+		return user, false, nil
+	}
+
+	return user, true, nil
+}
+===== ./internal/repository/user_repository_test.go =====
+// internal/repository/user_repository_test.go
+
+package repository_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/josuejero/selestino/internal/models"
+	"github.com/josuejero/selestino/internal/repository"
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/crypto/bcrypt"
+)
+
+func TestCreateUser(t *testing.T) {
+	fmt.Println("Starting TestCreateUser...")
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	repo := &repository.UserRepository{DB: db}
+	fmt.Printf("UserRepository: %+v\n", repo)
+
+	user := models.User{Username: "testuser", Password: "testpass", Role: "user"}
+	fmt.Printf("User: %+v\n", user)
+
+	mock.ExpectExec("INSERT INTO users").WithArgs(user.Username, sqlmock.AnyArg(), user.Role).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	err = repo.CreateUser(user)
+	fmt.Printf("Error from CreateUser: %v\n", err)
+	assert.NoError(t, err, "Error should be nil")
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestAuthenticateUser(t *testing.T) {
+	fmt.Println("Starting TestAuthenticateUser...")
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	repo := &repository.UserRepository{DB: db}
+	fmt.Printf("UserRepository: %+v\n", repo)
+
+	user := models.User{Username: "testuser", Password: "testpass", Role: "user"}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when hashing the password", err)
+	}
+	user.Password = string(hashedPassword)
+	fmt.Printf("Hashed Password: %s\n", user.Password)
+
+	rows := sqlmock.NewRows([]string{"username", "password", "role"}).
+		AddRow(user.Username, user.Password, user.Role)
+	mock.ExpectQuery("SELECT username, password, role FROM users WHERE username = \\$1").
+		WithArgs("testuser").WillReturnRows(rows)
+
+	returnedUser, authenticated, err := repo.AuthenticateUser("testuser", "testpass")
+	fmt.Printf("Error from AuthenticateUser: %v\n", err)
+	assert.NoError(t, err, "Error should be nil")
+
+	fmt.Printf("Stored Password: %s\n", user.Password)
+	fmt.Printf("Returned User: %+v\n", returnedUser)
+	fmt.Printf("Authenticated: %v\n", authenticated)
+
+	if !authenticated {
+		t.Errorf("Expected authentication to be true, got false")
+	}
+	assert.True(t, authenticated, "User should be authenticated")
+	assert.Equal(t, user.Username, returnedUser.Username, "Usernames should match")
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+===== ./jenkins-deployment.yaml =====
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      containers:
+      - name: jenkins
+        image: jenkins/jenkins:lts
+        ports:
+        - containerPort: 8080
+        - containerPort: 50000
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        volumeMounts:
+        - name: jenkins-home
+          mountPath: /var/jenkins_home
+      volumes:
+      - name: jenkins-home
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    nodePort: 30000
+  - name: agent
+    port: 50000
+    targetPort: 50000
+  selector:
+    app: jenkins
+===== ./Jenkinsfile =====
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
+        KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials'
+        DOCKER_REPO = 'josuejero/selestino'
+    }
+
+    triggers {
+        githubPush()
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                script {
+                    // Ensure Docker context is set to default
+                    sh 'docker context use default'
+                    
+                    // Verify Docker version
+                    sh 'docker --version'
+                    
+                    // Build Docker image
+                    def customImage = docker.build("${DOCKER_REPO}:latest")
+                }
+            }
+        }
+
+        stage('Push') {
+            steps {
+                script {
+                    echo 'Docker context:'
+                    sh 'docker context ls'
+
+                    // Explicitly set Docker context to default
+                    sh 'docker context use default'
+
+                    // Login to Docker Hub and push the image
+                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS_ID) {
+                        customImage.push()
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    // Apply Kubernetes configurations using kubectl
+                    withKubeConfig([credentialsId: KUBECONFIG_CREDENTIALS_ID]) {
+                        sh 'kubectl apply -f k8s/elasticsearch-deployment.yaml'
+                        sh 'kubectl apply -f k8s/postgres-deployment.yaml'
+                        sh 'kubectl apply -f k8s/selestino-deployment.yaml'
+                        sh 'kubectl apply -f k8s/redis-deployment.yaml'
+                    }
+                }
+            }
+        }
+    }
+}
+===== ./k8s/elasticsearch-deployment.yaml =====
+# k8s/elasticsearch-deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticsearch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      containers:
+        - name: elasticsearch
+          image: elasticsearch:7.10.0
+          env:
+            - name: discovery.type
+              value: single-node
+          ports:
+            - containerPort: 9200
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+spec:
+  selector:
+    app: elasticsearch
+  ports:
+    - protocol: TCP
+      port: 9200
+      targetPort: 9200
+===== ./k8s/postgres-deployment.yaml =====
+# k8s/postgres-deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:13
+          env:
+            - name: POSTGRES_DB
+              value: selestino
+            - name: POSTGRES_USER
+              value: selestino_user
+            - name: POSTGRES_PASSWORD
+              value: your_password
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgres-storage
+      volumes:
+        - name: postgres-storage
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  selector:
+    app: postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+===== ./k8s/redis-deployment.yaml =====
+# k8s/redis-deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:latest
+          ports:
+            - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  selector:
+    app: redis
+  ports:
+    - protocol: TCP
+      port: 6379
+      targetPort: 6379
+===== ./k8s/selestino-deployment.yaml =====
+# k8s/selestino-deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: selestino
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "8080"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: selestino
+  template:
+    metadata:
+      labels:
+        app: selestino
+    spec:
+      containers:
+        - name: selestino
+          image: selestino:latest
+          env:
+            - name: DB_HOST
+              value: postgres
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_USER
+              value: selestino_user
+            - name: DB_PASSWORD
+              value: your_password
+            - name: DB_NAME
+              value: selestino
+            - name: JWT_SECRET_KEY
+              value: my_secret_key
+            - name: REDIS_ADDR
+              value: redis:6379
+            - name: ELASTICSEARCH_URL
+              value: http://elasticsearch:9200
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: selestino
+spec:
+  selector:
+    app: selestino
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: LoadBalancer
+===== ./pkg/config/cache.go =====
+// pkg/config/cache.go
+
+package config
+
+import (
+	"context"
+	"os"
+
+	"github.com/go-redis/redis/v8"
+)
+
+var RedisClient *redis.Client
+
+func InitRedis() {
+	RedisClient = redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("REDIS_ADDR"),
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+}
+
+func GetRedisClient() *redis.Client {
+	return RedisClient
+}
+
+func SetRedis(ctx context.Context, key string, value interface{}) error {
+	return RedisClient.Set(ctx, key, value, 0).Err()
+}
+
+func GetRedis(ctx context.Context, key string) (string, error) {
+	return RedisClient.Get(ctx, key).Result()
+}
+
+func DelRedis(ctx context.Context, key string) error {
+	return RedisClient.Del(ctx, key).Err()
+}
+===== ./pkg/config/config.go =====
+package config
+
+import (
+    "database/sql"
+    "fmt"
+    _ "github.com/lib/pq"
+    "log"
+    "os"
+)
+
+func Connect() *sql.DB {
+    host := os.Getenv("DB_HOST")
+    port := os.Getenv("DB_PORT")
+    user := os.Getenv("DB_USER")
+    password := os.Getenv("DB_PASSWORD")
+    dbname := os.Getenv("DB_NAME")
+
+    psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+        host, port, user, password, dbname)
+
+    db, err := sql.Open("postgres", psqlInfo)
+    if err != nil {
+        log.Fatalf("Error opening database: %v", err)
+    }
+
+    if err := db.Ping(); err != nil {
+        log.Fatalf("Error connecting to the database: %v", err)
+    }
+
+    fmt.Println("Successfully connected to the database!")
+    return db
+}
+===== ./pkg/config/search.go =====
+// pkg/config/search.go
+
+package config
+
+import (
+	"context"
+	"log"
+	"os"
+
+	"github.com/olivere/elastic/v7"
+)
+
+var ESClient *elastic.Client
+
+func InitElasticsearch() {
+	var err error
+	ESClient, err = elastic.NewClient(
+		elastic.SetURL(os.Getenv("ELASTICSEARCH_URL")),
+		elastic.SetSniff(false),
+	)
+	if err != nil {
+		log.Fatalf("Error initializing Elasticsearch client: %v", err)
+	}
+}
+
+func CreateIndex(index string, mapping string) error {
+	ctx := context.Background()
+	exists, err := ESClient.IndexExists(index).Do(ctx)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		_, err = ESClient.CreateIndex(index).BodyString(mapping).Do(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func IndexDocument(index string, id string, doc interface{}) error {
+	ctx := context.Background()
+	_, err := ESClient.Index().
+		Index(index).
+		Id(id).
+		BodyJson(doc).
+		Do(ctx)
+	return err
+}
+===== ./README.md =====
+# Selestino
+
+Selestino is a recipe website where users can input available ingredients and get relevant recipes for Peruvian dishes. This project leverages a variety of technologies including Golang, PostgreSQL, Docker, Kubernetes, and Jenkins for CI/CD.
+
+## Table of Contents
+
+- [Project Overview](#project-overview)
+- [Features](#features)
+- [Technologies Used](#technologies-used)
+- [Setup and Installation](#setup-and-installation)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+- [Usage](#usage)
+  - [Running the Application](#running-the-application)
+  - [API Endpoints](#api-endpoints)
+- [Testing](#testing)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Project Overview
+
+Selestino is designed to help users find Peruvian recipes based on the ingredients they have on hand. Users can register, log in, and search for recipes. The application supports JWT-based authentication and includes CI/CD pipelines for continuous integration and deployment.
+
+## Features
+
+- User registration and authentication
+- Search recipes by ingredients and other criteria
+- RESTful API for interacting with the application
+- CI/CD pipeline with Jenkins
+- Dockerized application for easy deployment
+- Kubernetes for container orchestration
+
+## Technologies Used
+
+- Golang
+- PostgreSQL
+- Docker
+- Kubernetes
+- Jenkins
+- JWT (JSON Web Tokens)
+- Gorilla Mux
+- Testify (testing framework)
+- SQLMock (mocking SQL for tests)
+
+## Setup and Installation
+
+### Prerequisites
+
+Ensure you have the following installed:
+
+- Golang 1.20 or later
+- Docker
+- Docker Compose
+- Kubernetes (Minikube or any other local Kubernetes setup)
+- Jenkins (with necessary plugins)
+- Git
+
+### Installation
+
+1. Clone the repository:
+
+    ```bash
+    git clone https://github.com/josuejero/selestino.git
+    cd selestino
+    ```
+
+2. Set up the environment variables:
+
+    Create a `.env` file in the root directory with the following content:
+
+    ```env
+    DB_HOST=postgres
+    DB_PORT=5432
+    DB_USER=selestino_user
+    DB_PASSWORD=your_password
+    DB_NAME=selestino
+    JWT_SECRET_KEY=my_secret_key
+    ```
+
+3. Build and run the Docker containers:
+
+    ```bash
+    docker-compose up --build
+    ```
+
+4. Set up the Kubernetes environment:
+
+    ```bash
+    minikube start
+    eval $(minikube -p minikube docker-env)
+    docker build -t selestino:latest .
+    kubectl apply -f k8s/postgres-deployment.yaml
+    kubectl apply -f k8s/selestino-deployment.yaml
+    ```
+
+5. Access the application:
+
+    ```bash
+    minikube service selestino --url
+    ```
+
+## Usage
+
+### Running the Application
+
+After following the installation steps, you can access the application using the Minikube service URL. Use a tool like Postman or cURL to interact with the API endpoints.
+
+### API Endpoints
+
+- **Register User**
+    ```http
+    POST /register
+    ```
+
+    **Request Body:**
+    ```json
+    {
+        "username": "exampleuser",
+        "password": "password123"
+    }
+    ```
+
+- **Login User**
+    ```http
+    POST /login
+    ```
+
+    **Request Body:**
+    ```json
+    {
+        "username": "exampleuser",
+        "password": "password123"
+    }
+    ```
+
+- **Get All Recipes**
+    ```http
+    GET /recipes
+    ```
+
+- **Add Recipe**
+    ```http
+    POST /recipes
+    ```
+
+    **Request Body:**
+    ```json
+    {
+        "name": "Lomo Saltado",
+        "ingredients": "Beef, Onion, Tomato, Soy Sauce",
+        "instructions": "Stir-fry ingredients and serve with rice"
+    }
+    ```
+
+- **Search Recipes by Ingredients**
+    ```http
+    GET /recipes/search?ingredients=Beef,Tomato
+    ```
+
+## Testing
+
+Run the tests to ensure all functionality is working correctly:
+
+```bash
+go test ./internal/repository
+```
+
+## CI/CD Pipeline
+
+The CI/CD pipeline is set up using Jenkins. It automates the build, push, and deployment processes. The `Jenkinsfile` in the root directory defines the pipeline stages.
+
+To configure the Jenkins pipeline:
+
+1. Install Jenkins and necessary plugins.
+2. Create credentials in Jenkins for Docker Hub and Kubernetes.
+3. Create a new pipeline job and configure it to use the repository's `Jenkinsfile`.
+
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch (`git checkout -b feature-branch`).
+3. Make your changes and commit them (`git commit -m 'Add new feature'`).
+4. Push to the branch (`git push origin feature-branch`).
+5. Create a pull request.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
