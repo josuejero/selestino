@@ -1,6 +1,6 @@
 // api/middleware_test.go
 
-package api
+package api_test
 
 import (
 	"net/http"
@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
+	"github.com/josuejero/selestino/api"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,18 +17,18 @@ func TestRoleBasedAuthorization(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	adminToken, _ := GenerateToken("admin_user", "admin")
+	adminToken, _ := api.GenerateToken("admin_user", "admin")
 	req, _ := http.NewRequest("GET", "/", nil)
 	req.AddCookie(&http.Cookie{Name: "token", Value: adminToken})
 
 	rr := httptest.NewRecorder()
 	router := mux.NewRouter()
-	router.Handle("/", RoleBasedAuthorization("admin")(handler))
+	router.Handle("/", api.RoleBasedAuthorization("admin")(handler))
 	router.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	userToken, _ := GenerateToken("regular_user", "user")
+	userToken, _ := api.GenerateToken("regular_user", "user")
 	req, _ = http.NewRequest("GET", "/", nil)
 	req.AddCookie(&http.Cookie{Name: "token", Value: userToken})
 

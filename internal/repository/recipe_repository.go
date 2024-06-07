@@ -13,9 +13,17 @@ import (
 	"github.com/olivere/elastic/v7"
 )
 
+type RecipeRepositoryInterface interface {
+	GetAllRecipes() ([]models.Recipe, error)
+	AddRecipe(recipe models.Recipe) error
+	SearchRecipesByCriteria(criteria map[string]string) ([]models.Recipe, error)
+}
+
 type RecipeRepository struct {
 	DB *sql.DB
 }
+
+var _ RecipeRepositoryInterface = &RecipeRepository{}
 
 func (r *RecipeRepository) GetAllRecipes() ([]models.Recipe, error) {
 	ctx := context.Background()
