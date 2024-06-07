@@ -36,8 +36,13 @@ pipeline {
 
         stage('Test') {
             steps {
-                sh 'go test -v ./... -coverprofile=coverage.out'
-                sh 'go tool cover -html=coverage.out -o coverage.html'
+                script {
+                    docker.image('golang:1.20-alpine').inside {
+                        sh 'apk add --no-cache git'
+                        sh 'go test -v ./... -coverprofile=coverage.out'
+                        sh 'go tool cover -html=coverage.out -o coverage.html'
+                    }
+                }
             }
         }
 
