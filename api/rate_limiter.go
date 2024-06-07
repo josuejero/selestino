@@ -1,5 +1,3 @@
-// api/rate_limiter.go
-
 package api
 
 import (

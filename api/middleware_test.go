@@ -1,5 +1,3 @@
-// api/middleware_test.go
-
 package api_test
 
 import (

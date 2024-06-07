@@ -1,5 +1,3 @@
-# Dockerfile
-
 # Use the official Golang image as the base image
 FROM golang:1.20-alpine
 

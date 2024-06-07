@@ -28,12 +28,12 @@ services:
     environment:
       discovery.type: single-node
     ports:
-      - "9201:9200"  # Use 9201 on the host and map it to 9200 in the container
+      - "9200:9200"
 
   jenkins:
     image: jenkins/jenkins:lts
     ports:
-      - "8082:8080"  # Change host port to 8082 to avoid conflict
+      - "8082:8080"
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
@@ -41,7 +41,7 @@ services:
   app:
     build: .
     ports:
-      - "8081:8080"  # Change host port to 8081 to avoid conflict
+      - "8081:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -56,7 +56,7 @@ services:
       DB_PASSWORD: your_password
       DB_NAME: selestino
       REDIS_ADDR: redis:6379
-      ELASTICSEARCH_URL: http://elasticsearch:9200  # This remains unchanged since it's the internal container port
+      ELASTICSEARCH_URL: http://elasticsearch:9200
 
 volumes:
   postgres_data:
