@@ -38,7 +38,7 @@ pipeline {
             steps {
                 script {
                     docker.image('golang:1.20-alpine').inside {
-                        sh 'apk add --no-cache git'
+                        sh 'apk --no-cache add git'
                         sh 'go test -v ./... -coverprofile=coverage.out'
                         sh 'go tool cover -html=coverage.out -o coverage.html'
                     }
