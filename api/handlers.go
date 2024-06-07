@@ -7,7 +7,14 @@ import (
 	"net/http"
 
 	"github.com/josuejero/selestino/internal/models"
+	"github.com/josuejero/selestino/internal/repository"
 )
+
+var recipeRepo repository.RecipeRepositoryInterface
+
+func SetRecipeRepo(r repository.RecipeRepositoryInterface) {
+	recipeRepo = r
+}
 
 func GetRecipes(w http.ResponseWriter, r *http.Request) {
 	recipes, err := recipeRepo.GetAllRecipes()

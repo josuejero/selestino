@@ -15,11 +15,10 @@ import (
 )
 
 var userRepo *repository.UserRepository
-var recipeRepo *repository.RecipeRepository
 
 func InitializeRouter(db *sql.DB) *mux.Router {
 	userRepo = &repository.UserRepository{DB: db}
-	recipeRepo = &repository.RecipeRepository{DB: db}
+	SetRecipeRepo(&repository.RecipeRepository{DB: db})
 
 	router := mux.NewRouter()
 
