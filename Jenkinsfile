@@ -50,20 +50,22 @@ pipeline {
             steps {
                 script {
                     withKubeConfig([credentialsId: KUBECONFIG_CREDENTIALS_ID]) {
-                        // Install kubectl
-                        sh '''
-                        apk --no-cache add curl
-                        curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
-                        chmod +x ./kubectl
-                        mv ./kubectl /usr/local/bin/kubectl
-                        '''
+                        // Use Alpine Linux Docker container for kubectl installation
+                        docker.image('alpine:latest').inside {
+                            sh '''
+                            apk --no-cache add curl
+                            curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+                            chmod +x ./kubectl
+                            mv ./kubectl /usr/local/bin/kubectl
+                            '''
 
-                        sh 'kubectl version --client'
+                            sh 'kubectl version --client'
 
-                        sh 'kubectl apply -f k8s/elasticsearch-deployment.yaml'
-                        sh 'kubectl apply -f k8s/postgres-deployment.yaml'
-                        sh 'kubectl apply -f k8s/selestino-deployment.yaml'
-                        sh 'kubectl apply -f k8s/redis-deployment.yaml'
+                            sh 'kubectl apply -f k8s/elasticsearch-deployment.yaml'
+                            sh 'kubectl apply -f k8s/postgres-deployment.yaml'
+                            sh 'kubectl apply -f k8s/selestino-deployment.yaml'
+                            sh 'kubectl apply -f k8s/redis-deployment.yaml'
+                        }
                     }
                 }
             }
