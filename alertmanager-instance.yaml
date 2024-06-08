@@ -1,0 +1,32 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Alertmanager
+metadata:
+  name: alertmanager
+  labels:
+    app.kubernetes.io/name: alertmanager
+spec:
+  replicas: 1
+  serviceAccountName: alertmanager
+  resources:
+    requests:
+      memory: 200Mi
+      cpu: 100m
+    limits:
+      memory: 500Mi
+      cpu: 200m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  labels:
+    app.kubernetes.io/name: alertmanager
+spec:
+  type: NodePort
+  ports:
+  - name: web
+    port: 9093
+    targetPort: 9093
+    nodePort: 30093
+  selector:
+    app.kubernetes.io/name: alertmanager
