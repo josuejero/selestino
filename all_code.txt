@@ -780,6 +780,63 @@ Contributions are welcome! Please follow these steps:
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+===== ./prometheus-operator-bundle.yaml =====
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: alertmanagers.monitoring.coreos.com
+spec:
+  group: monitoring.coreos.com
+  names:
+    kind: Alertmanager
+    listKind: AlertmanagerList
+    plural: alertmanagers
+    singular: alertmanager
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+===== ./alertmanager-instance.yaml =====
+apiVersion: monitoring.coreos.com/v1
+kind: Alertmanager
+metadata:
+  name: alertmanager
+  labels:
+    app.kubernetes.io/name: alertmanager
+spec:
+  replicas: 1
+  serviceAccountName: alertmanager
+  resources:
+    requests:
+      memory: 200Mi
+      cpu: 100m
+    limits:
+      memory: 500Mi
+      cpu: 200m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  labels:
+    app.kubernetes.io/name: alertmanager
+spec:
+  type: NodePort
+  ports:
+  - name: web
+    port: 9093
+    targetPort: 9093
+    nodePort: 30093
+  selector:
+    app.kubernetes.io/name: alertmanager
 ===== ./Jenkinsfile =====
 pipeline {
     agent any
@@ -820,8 +877,8 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    docker.image('golang:1.20-alpine').inside {
-                        sh 'apk --no-cache add --allow-untrusted --root /root --no-network git'
+                    docker.image('golang:1.20-alpine').inside('-u root:root') {
+                        sh 'apk --no-cache add git'
                         sh 'go test -v ./... -coverprofile=coverage.out'
                         sh 'go tool cover -html=coverage.out -o coverage.html'
                     }
@@ -853,6 +910,91 @@ pipeline {
         }
     }
 }
+===== ./prometheus-operator-components.yaml =====
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-operator
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - nodes
+      - services
+      - endpoints
+      - nodes/proxy
+      - nodes/metrics
+    verbs:
+      - get
+      - list
+      - watch
+  # Add other necessary rules here
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus-operator
+  namespace: default
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-operator
+subjects:
+  - kind: ServiceAccount
+    name: prometheus-operator
+    namespace: default
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-operator
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: prometheus-operator
+  template:
+    metadata:
+      labels:
+        name: prometheus-operator
+    spec:
+      serviceAccountName: prometheus-operator
+      containers:
+        - name: prometheus-operator
+          image: quay.io/prometheus-operator/prometheus-operator:v0.50.0
+          args:
+            - --kubelet-service=kube-system/kubelet
+            - --config-reloader-image=quay.io/prometheus-operator/prometheus-config-reloader:v0.50.0
+            - --prometheus-config-reloader=quay.io/prometheus-operator/prometheus-config-reloader:v0.50.0
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+  # Add other necessary configurations here
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-operator
+  namespace: default
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    name: prometheus-operator
 ===== ./api/handlers_test.go =====
 package api_test
 
@@ -1428,6 +1570,144 @@ spec:
     targetPort: 50000
   selector:
     app: jenkins
+===== ./prometheus-instance.yaml =====
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: prometheus
+  labels:
+    app.kubernetes.io/name: prometheus
+spec:
+  replicas: 1
+  serviceAccountName: prometheus-operator
+  serviceMonitorSelector:
+    matchLabels:
+      team: frontend
+  resources:
+    requests:
+      memory: 400Mi
+      cpu: 200m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+  alerting:
+    alertmanagers:
+      - namespace: default
+        name: alertmanager
+        port: web
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  labels:
+    app.kubernetes.io/name: prometheus
+spec:
+  type: NodePort
+  ports:
+  - name: web
+    port: 9090
+    targetPort: 9090
+    nodePort: 30090
+  selector:
+    app.kubernetes.io/name: prometheus
+===== ./values.yaml =====
+prometheus:
+  prometheusSpec:
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: "500m"
+      limits:
+        memory: "2Gi"
+        cpu: "1Gi"
+
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: "500m"
+      limits:
+        memory: "2Gi"
+        cpu: "1Gi"
+===== ./prometheus-crds.yaml =====
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: alertmanagers.monitoring.coreos.com
+spec:
+  group: monitoring.coreos.com
+  names:
+    kind: Alertmanager
+    listKind: AlertmanagerList
+    plural: alertmanagers
+    singular: alertmanager
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: prometheuses.monitoring.coreos.com
+spec:
+  group: monitoring.coreos.com
+  names:
+    kind: Prometheus
+    listKind: PrometheusList
+    plural: prometheuses
+    singular: prometheus
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: servicemonitors.monitoring.coreos.com
+spec:
+  group: monitoring.coreos.com
+  names:
+    kind: ServiceMonitor
+    listKind: ServiceMonitorList
+    plural: servicemonitors
+    singular: servicemonitor
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+
+# Add other necessary CRDs similarly
 ===== ./.vscode/settings.json =====
 {
 }===== ./.vscode/tasks.json =====

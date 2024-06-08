@@ -1,0 +1,40 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: prometheus
+  labels:
+    app.kubernetes.io/name: prometheus
+spec:
+  replicas: 1
+  serviceAccountName: prometheus-operator
+  serviceMonitorSelector:
+    matchLabels:
+      team: frontend
+  resources:
+    requests:
+      memory: 400Mi
+      cpu: 200m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+  alerting:
+    alertmanagers:
+      - namespace: default
+        name: alertmanager
+        port: web
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  labels:
+    app.kubernetes.io/name: prometheus
+spec:
+  type: NodePort
+  ports:
+  - name: web
+    port: 9090
+    targetPort: 9090
+    nodePort: 30090
+  selector:
+    app.kubernetes.io/name: prometheus
