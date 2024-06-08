@@ -108,6 +108,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: elasticsearch
+  namespace: monitoring
+  labels:
+    app: elasticsearch
 spec:
   replicas: 1
   selector:
@@ -119,25 +122,24 @@ spec:
         app: elasticsearch
     spec:
       containers:
-        - name: elasticsearch
-          image: elasticsearch:7.10.0
-          env:
-            - name: discovery.type
-              value: single-node
-          ports:
-            - containerPort: 9200
+      - name: elasticsearch
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.10.0
+        ports:
+        - containerPort: 9200
+        env:
+        - name: discovery.type
+          value: single-node
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: elasticsearch
+  namespace: monitoring
 spec:
+  ports:
+  - port: 9200
   selector:
     app: elasticsearch
-  ports:
-    - protocol: TCP
-      port: 9200
-      targetPort: 9200
 ===== ./k8s/postgres-deployment.yaml =====
 apiVersion: apps/v1
 kind: Deployment
@@ -183,6 +185,43 @@ spec:
     - protocol: TCP
       port: 5432
       targetPort: 5432
+===== ./k8s/kibana-deployment.yaml =====
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+  namespace: monitoring
+  labels:
+    app: kibana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kibana
+  template:
+    metadata:
+      labels:
+        app: kibana
+    spec:
+      containers:
+      - name: kibana
+        image: docker.elastic.co/kibana/kibana:7.10.0
+        ports:
+        - containerPort: 5601
+        env:
+        - name: ELASTICSEARCH_URL
+          value: http://elasticsearch:9200
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana
+  namespace: monitoring
+spec:
+  ports:
+  - port: 5601
+  selector:
+    app: kibana
 ===== ./k8s/redis-deployment.yaml =====
 apiVersion: apps/v1
 kind: Deployment
@@ -1491,10 +1530,11 @@ services:
   jenkins:
     image: jenkins/jenkins:lts
     ports:
-      - "8082:8080"
+      - "8080:8080"
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
 
   app:
     build: .
