@@ -884,7 +884,7 @@ pipeline {
         DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
         KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials'
         DOCKER_REPO = 'josuejero/selestino'
-        KUBECONFIG = "${WORKSPACE}/config"
+        KUBECONFIG = "${WORKSPACE}/kubeconfig"  // Corrected the path to kubeconfig
     }
 
     triggers {
@@ -941,10 +941,10 @@ pipeline {
 
                             sh 'kubectl version --client'
 
-                            sh 'kubectl apply -f k8s/elasticsearch-deployment.yaml'
-                            sh 'kubectl apply -f k8s/postgres-deployment.yaml'
-                            sh 'kubectl apply -f k8s/selestino-deployment.yaml'
-                            sh 'kubectl apply -f k8s/redis-deployment.yaml'
+                            sh 'KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/elasticsearch-deployment.yaml'
+                            sh 'KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/postgres-deployment.yaml'
+                            sh 'KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/selestino-deployment.yaml'
+                            sh 'KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/redis-deployment.yaml'
                         }
                     }
                 }
