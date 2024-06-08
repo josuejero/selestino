@@ -25,6 +25,39 @@ func main() {
 		logrus.Fatalf("could not start server: %v", err)
 	}
 }
+===== ./config =====
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /Users/wholesway/.minikube/ca.crt
+    extensions:
+    - extension:
+        last-update: Fri, 07 Jun 2024 21:43:59 EDT
+        provider: minikube.sigs.k8s.io
+        version: v1.30.1
+      name: cluster_info
+    server: https://127.0.0.1:50764
+  name: minikube
+contexts:
+- context:
+    cluster: minikube
+    extensions:
+    - extension:
+        last-update: Fri, 07 Jun 2024 21:43:59 EDT
+        provider: minikube.sigs.k8s.io
+        version: v1.30.1
+      name: context_info
+    namespace: default
+    user: minikube
+  name: minikube
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: minikube
+  user:
+    client-certificate: /Users/wholesway/.minikube/profiles/minikube/client.crt
+    client-key: /Users/wholesway/.minikube/profiles/minikube/client.key
 ===== ./dockerfile =====
 # Use the official Golang image as the base image
 FROM golang:1.20-alpine
@@ -876,6 +909,51 @@ spec:
     nodePort: 30093
   selector:
     app.kubernetes.io/name: alertmanager
+===== ./kubeconfig =====
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /Users/wholesway/.minikube/ca.crt
+    extensions:
+    - extension:
+        last-update: Fri, 07 Jun 2024 21:43:59 EDT
+        provider: minikube.sigs.k8s.io
+        version: v1.30.1
+      name: cluster_info
+    server: https://127.0.0.1:50764
+  name: minikube
+contexts:
+- context:
+    cluster: minikube
+    extensions:
+    - extension:
+        last-update: Fri, 07 Jun 2024 21:43:59 EDT
+        provider: minikube.sigs.k8s.io
+        version: v1.30.1
+      name: context_info
+    namespace: default
+    user: minikube
+  name: minikube
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: minikube
+  user:
+    client-certificate: /Users/wholesway/.minikube/profiles/minikube/client.crt
+    client-key: /Users/wholesway/.minikube/profiles/minikube/client.key
+===== ./prometheus_setup_output.log =====
+customresourcedefinition.apiextensions.k8s.io/alertmanagerconfigs.monitoring.coreos.com unchanged
+customresourcedefinition.apiextensions.k8s.io/podmonitors.monitoring.coreos.com unchanged
+customresourcedefinition.apiextensions.k8s.io/probes.monitoring.coreos.com unchanged
+customresourcedefinition.apiextensions.k8s.io/prometheusrules.monitoring.coreos.com unchanged
+customresourcedefinition.apiextensions.k8s.io/scrapeconfigs.monitoring.coreos.com unchanged
+customresourcedefinition.apiextensions.k8s.io/servicemonitors.monitoring.coreos.com unchanged
+clusterrolebinding.rbac.authorization.k8s.io/prometheus-operator unchanged
+clusterrole.rbac.authorization.k8s.io/prometheus-operator unchanged
+deployment.apps/prometheus-operator unchanged
+serviceaccount/prometheus-operator unchanged
+service/prometheus-operator unchanged
 ===== ./Jenkinsfile =====
 pipeline {
     agent any
@@ -897,7 +975,9 @@ pipeline {
                 script {
                     sh 'docker context use default'
                     sh 'docker --version'
+                    echo "Building Docker image..."
                     docker.build("${DOCKER_REPO}:latest")
+                    echo "Docker image built successfully"
                 }
             }
         }
@@ -907,9 +987,11 @@ pipeline {
                 script {
                     sh 'docker context ls'
                     sh 'docker context use default'
+                    echo "Pushing Docker image to repository..."
                     withDockerRegistry([url: 'https://index.docker.io/v1/', credentialsId: DOCKER_CREDENTIALS_ID]) {
                         docker.image("${DOCKER_REPO}:latest").push()
                     }
+                    echo "Docker image pushed successfully"
                 }
             }
         }
@@ -919,8 +1001,10 @@ pipeline {
                 script {
                     docker.image('golang:1.20-alpine').inside('-u root:root') {
                         sh 'apk --no-cache add git'
+                        echo "Running tests..."
                         sh 'go test -v ./... -coverprofile=coverage.out'
                         sh 'go tool cover -html=coverage.out -o coverage.html'
+                        echo "Tests completed"
                     }
                 }
             }
@@ -930,21 +1014,30 @@ pipeline {
             steps {
                 script {
                     withKubeConfig([credentialsId: KUBECONFIG_CREDENTIALS_ID]) {
-                        // Use Alpine Linux Docker container for kubectl installation
                         docker.image('alpine:latest').inside('-u root') {
+                            echo "Installing kubectl..."
                             sh '''
                             apk --no-cache add curl
                             curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
                             chmod +x ./kubectl
                             mv ./kubectl /usr/local/bin/kubectl
                             '''
-
                             sh 'kubectl version --client'
+                            echo "kubectl installed successfully"
 
+                            echo "Validating kubeconfig path and contents..."
+                            sh 'ls -l ${KUBECONFIG}'
+                            sh 'cat ${KUBECONFIG}'
+
+                            echo "Applying Kubernetes configurations..."
                             sh 'KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/elasticsearch-deployment.yaml'
                             sh 'KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/postgres-deployment.yaml'
                             sh 'KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/selestino-deployment.yaml'
                             sh 'KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/redis-deployment.yaml'
+                            echo "Kubernetes configurations applied"
+
+                            echo "Listing Kubernetes pods..."
+                            sh 'KUBECONFIG=${KUBECONFIG} kubectl get pods -o wide'
                         }
                     }
                 }
@@ -1761,6 +1854,20 @@ spec:
               x-kubernetes-preserve-unknown-fields: true
 
 # Add other necessary CRDs similarly
+===== ./.git/config =====
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	ignorecase = true
+	precomposeunicode = true
+[remote "origin"]
+	url = https://github.com/josuejero/selestino.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "master"]
+	remote = origin
+	merge = refs/heads/master
 ===== ./.vscode/settings.json =====
 {
 }===== ./.vscode/tasks.json =====
