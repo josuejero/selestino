@@ -930,7 +930,7 @@ pipeline {
                 script {
                     withKubeConfig([credentialsId: KUBECONFIG_CREDENTIALS_ID]) {
                         // Use Alpine Linux Docker container for kubectl installation
-                        docker.image('alpine:latest').inside {
+                        docker.image('alpine:latest').inside('-u root') {
                             sh '''
                             apk --no-cache add curl
                             curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
