@@ -5,7 +5,7 @@ pipeline {
         DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
         KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials'
         DOCKER_REPO = 'josuejero/selestino'
-        KUBECONFIG = "${WORKSPACE}/kubeconfig"  // Corrected the path to kubeconfig
+        KUBECONFIG = "${WORKSPACE}/kubeconfig"  
     }
 
     triggers {
@@ -16,6 +16,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
+                    echo "Setting Docker context to default..."
                     sh 'docker context use default'
                     sh 'docker --version'
                     echo "Building Docker image..."
@@ -28,7 +29,9 @@ pipeline {
         stage('Push') {
             steps {
                 script {
+                    echo "Listing Docker contexts..."
                     sh 'docker context ls'
+                    echo "Setting Docker context to default..."
                     sh 'docker context use default'
                     echo "Pushing Docker image to repository..."
                     withDockerRegistry([url: 'https://index.docker.io/v1/', credentialsId: DOCKER_CREDENTIALS_ID]) {
@@ -43,6 +46,7 @@ pipeline {
             steps {
                 script {
                     docker.image('golang:1.20-alpine').inside('-u root:root') {
+                        echo "Installing Git inside the Docker container..."
                         sh 'apk --no-cache add git'
                         echo "Running tests..."
                         sh 'go test -v ./... -coverprofile=coverage.out'
@@ -53,9 +57,34 @@ pipeline {
             }
         }
 
+        stage('Prepare Kubeconfig') {
+            steps {
+                script {
+                    echo "Creating .minikube directory in workspace..."
+                    sh 'mkdir -p ${WORKSPACE}/.minikube'
+                    echo "Copying ca.crt to workspace..."
+                    sh 'cp /Users/wholesway/.minikube/ca.crt ${WORKSPACE}/.minikube/ca.crt'
+                    echo "Copying client.crt to workspace..."
+                    sh 'cp /Users/wholesway/.minikube/profiles/minikube/client.crt ${WORKSPACE}/.minikube/client.crt'
+                    echo "Copying client.key to workspace..."
+                    sh 'cp /Users/wholesway/.minikube/profiles/minikube/client.key ${WORKSPACE}/.minikube/client.key'
+
+                    echo "Updating paths in kubeconfig file..."
+                    sh """
+                        sed -i 's|/Users/wholesway/.minikube/ca.crt|${WORKSPACE}/.minikube/ca.crt|g' ${KUBECONFIG}
+                        sed -i 's|/Users/wholesway/.minikube/profiles/minikube/client.crt|${WORKSPACE}/.minikube/client.crt|g' ${KUBECONFIG}
+                        sed -i 's|/Users/wholesway/.minikube/profiles/minikube/client.key|${WORKSPACE}/.minikube/client.key|g' ${KUBECONFIG}
+                    """
+                    echo "Updated kubeconfig file:"
+                    sh 'cat ${KUBECONFIG}'
+                }
+            }
+        }
+
         stage('Deploy') {
             steps {
                 script {
+                    echo "Entering withKubeConfig block..."
                     withKubeConfig([credentialsId: KUBECONFIG_CREDENTIALS_ID]) {
                         docker.image('alpine:latest').inside('-u root') {
                             echo "Installing kubectl..."
@@ -94,7 +123,20 @@ pipeline {
                     reportFiles: 'coverage.html',
                     reportName: 'Coverage Report'
                 ])
+                echo "Coverage report published"
             }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline execution completed"
+        }
+        success {
+            echo "Pipeline succeeded"
+        }
+        failure {
+            echo "Pipeline failed"
         }
     }
 }
