@@ -5,6 +5,7 @@ pipeline {
         DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
         KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials'
         DOCKER_REPO = 'josuejero/selestino'
+        KUBECONFIG = "${WORKSPACE}/config"
     }
 
     triggers {
