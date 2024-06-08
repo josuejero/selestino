@@ -5,15 +5,17 @@ pipeline {
         DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
         KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials'
         DOCKER_REPO = 'josuejero/selestino'
-        KUBECONFIG = "${WORKSPACE}/kubeconfig"  // Corrected the path to kubeconfig
-    }
-
-    triggers {
-        githubPush()
+        KUBECONFIG = "${WORKSPACE}/kubeconfig"
     }
 
     stages {
-        stage('Build') {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
             steps {
                 script {
                     sh 'docker context use default'
@@ -25,7 +27,7 @@ pipeline {
             }
         }
 
-        stage('Push') {
+        stage('Push Docker Image') {
             steps {
                 script {
                     sh 'docker context ls'
@@ -39,7 +41,7 @@ pipeline {
             }
         }
 
-        stage('Test') {
+        stage('Run Tests') {
             steps {
                 script {
                     docker.image('golang:1.20-alpine').inside('-u root:root') {
@@ -53,7 +55,7 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy to Kubernetes') {
             steps {
                 script {
                     withKubeConfig([credentialsId: KUBECONFIG_CREDENTIALS_ID]) {
@@ -95,6 +97,18 @@ pipeline {
                     reportName: 'Coverage Report'
                 ])
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully'
+        }
+        failure {
+            echo 'Pipeline failed'
+        }
+        always {
+            cleanWs()
         }
     }
 }

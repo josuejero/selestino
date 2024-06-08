@@ -30,6 +30,7 @@ services:
     ports:
       - "9200:9200"
 
+
   jenkins:
     image: jenkins/jenkins:lts
     ports:
@@ -37,6 +38,7 @@ services:
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
+      - /path/on/host:/path/in/container
       - /var/run/docker.sock:/var/run/docker.sock
 
   app:
