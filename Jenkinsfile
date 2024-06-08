@@ -68,6 +68,10 @@ pipeline {
                             sh 'kubectl version --client'
                             echo "kubectl installed successfully"
 
+                            echo "Validating kubeconfig path and contents..."
+                            sh 'ls -l ${KUBECONFIG}'
+                            sh 'cat ${KUBECONFIG}'
+
                             echo "Applying Kubernetes configurations..."
                             sh 'KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/elasticsearch-deployment.yaml'
                             sh 'KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/postgres-deployment.yaml'
