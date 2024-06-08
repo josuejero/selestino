@@ -1,4 +1,3 @@
-===== ./cmd/main.go =====
 package main
 
 import (
@@ -25,7 +24,27 @@ func main() {
 		logrus.Fatalf("could not start server: %v", err)
 	}
 }
-===== ./dockerfile =====
+MIT License
+
+Copyright (c) 2024 Josue Jeronimo
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 # Use the official Golang image as the base image
 FROM golang:1.20-alpine
 
@@ -49,7 +68,6 @@ EXPOSE 8080
 
 # Set the entry point to run the application
 CMD ["./selestino"]
-===== ./k8s/selestino-deployment.yaml =====
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -103,7 +121,6 @@ spec:
       port: 8080
       targetPort: 8080
   type: LoadBalancer
-===== ./k8s/elasticsearch-deployment.yaml =====
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -140,7 +157,6 @@ spec:
   - port: 9200
   selector:
     app: elasticsearch
-===== ./k8s/postgres-deployment.yaml =====
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -185,7 +201,6 @@ spec:
     - protocol: TCP
       port: 5432
       targetPort: 5432
-===== ./k8s/kibana-deployment.yaml =====
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -222,7 +237,6 @@ spec:
   - port: 5601
   selector:
     app: kibana
-===== ./k8s/redis-deployment.yaml =====
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -254,14 +268,12 @@ spec:
     - protocol: TCP
       port: 6379
       targetPort: 6379
-===== ./initdb/init.sql =====
 CREATE TABLE IF NOT EXISTS recipes (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     ingredients TEXT NOT NULL,
     instructions TEXT NOT NULL
 );
-===== ./internal/repository/recipe_repository.go =====
 package repository
 
 import (
@@ -377,7 +389,6 @@ func (r *RecipeRepository) SearchRecipesByCriteria(criteria map[string]string) (
 
 	return recipes, nil
 }
-===== ./internal/repository/mock_recipe_repository.go =====
 package repository
 
 import (
@@ -403,7 +414,6 @@ func (m *MockRecipeRepository) SearchRecipesByCriteria(criteria map[string]strin
 	args := m.Called(criteria)
 	return args.Get(0).([]models.Recipe), args.Error(1)
 }
-===== ./internal/repository/mock_db.go =====
 package repository
 
 import (
@@ -431,7 +441,6 @@ func (m *MockDB) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	arguments := m.Called(append([]interface{}{query}, args...)...)
 	return arguments.Get(0).(*sql.Rows), arguments.Error(1)
 }
-===== ./internal/repository/user_repository_test.go =====
 package repository_test
 
 import (
@@ -514,7 +523,6 @@ func TestAuthenticateUser(t *testing.T) {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
-===== ./internal/repository/user_repository.go =====
 package repository
 
 import (
@@ -560,7 +568,6 @@ func (r *UserRepository) AuthenticateUser(username, password string) (models.Use
 
 	return user, true, nil
 }
-===== ./internal/repository/recipe_repository_test.go =====
 package repository_test
 
 import (
@@ -609,7 +616,6 @@ func TestGetAllRecipes(t *testing.T) {
 	assert.Len(t, recipes, 1)
 	assert.Equal(t, "Ceviche", recipes[0].Name)
 }
-===== ./internal/models/user.go =====
 package models
 
 type User struct {
@@ -618,7 +624,6 @@ type User struct {
 	Password string `json:"password"`
 	Role     string `json:"role"`
 }
-===== ./internal/models/recipe.go =====
 package models
 
 type Recipe struct {
@@ -627,7 +632,6 @@ type Recipe struct {
 	Ingredients  string `json:"ingredients"`
 	Instructions string `json:"instructions"`
 }
-===== ./README.md =====
 # Selestino
 
 Selestino is a recipe website where users can input available ingredients and get relevant recipes for Peruvian dishes. This project leverages a variety of technologies including Golang, PostgreSQL, Docker, Kubernetes, and Jenkins for CI/CD.
@@ -819,7 +823,6 @@ Contributions are welcome! Please follow these steps:
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-===== ./prometheus-operator-bundle.yaml =====
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -843,7 +846,6 @@ spec:
             spec:
               type: object
               x-kubernetes-preserve-unknown-fields: true
-===== ./alertmanager-instance.yaml =====
 apiVersion: monitoring.coreos.com/v1
 kind: Alertmanager
 metadata:
@@ -876,40 +878,6 @@ spec:
     nodePort: 30093
   selector:
     app.kubernetes.io/name: alertmanager
-===== ./kubeconfig =====
-apiVersion: v1
-clusters:
-- cluster:
-    certificate-authority: /Users/wholesway/.minikube/ca.crt
-    extensions:
-    - extension:
-        last-update: Fri, 07 Jun 2024 21:43:59 EDT
-        provider: minikube.sigs.k8s.io
-        version: v1.30.1
-      name: cluster_info
-    server: https://127.0.0.1:50764
-  name: minikube
-contexts:
-- context:
-    cluster: minikube
-    extensions:
-    - extension:
-        last-update: Fri, 07 Jun 2024 21:43:59 EDT
-        provider: minikube.sigs.k8s.io
-        version: v1.30.1
-      name: context_info
-    namespace: default
-    user: minikube
-  name: minikube
-current-context: minikube
-kind: Config
-preferences: {}
-users:
-- name: minikube
-  user:
-    client-certificate: /Users/wholesway/.minikube/profiles/minikube/client.crt
-    client-key: /Users/wholesway/.minikube/profiles/minikube/client.key
-===== ./prometheus_setup_output.log =====
 customresourcedefinition.apiextensions.k8s.io/alertmanagerconfigs.monitoring.coreos.com unchanged
 customresourcedefinition.apiextensions.k8s.io/podmonitors.monitoring.coreos.com unchanged
 customresourcedefinition.apiextensions.k8s.io/probes.monitoring.coreos.com unchanged
@@ -921,7 +889,6 @@ clusterrole.rbac.authorization.k8s.io/prometheus-operator unchanged
 deployment.apps/prometheus-operator unchanged
 serviceaccount/prometheus-operator unchanged
 service/prometheus-operator unchanged
-===== ./Jenkinsfile =====
 pipeline {
     agent any
 
@@ -929,15 +896,17 @@ pipeline {
         DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
         KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials'
         DOCKER_REPO = 'josuejero/selestino'
-        KUBECONFIG = "${WORKSPACE}/kubeconfig"  // Corrected the path to kubeconfig
-    }
-
-    triggers {
-        githubPush()
+        KUBECONFIG = "${WORKSPACE}/kubeconfig"
     }
 
     stages {
-        stage('Build') {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
             steps {
                 script {
                     sh 'docker context use default'
@@ -949,7 +918,7 @@ pipeline {
             }
         }
 
-        stage('Push') {
+        stage('Push Docker Image') {
             steps {
                 script {
                     sh 'docker context ls'
@@ -963,7 +932,7 @@ pipeline {
             }
         }
 
-        stage('Test') {
+        stage('Run Tests') {
             steps {
                 script {
                     docker.image('golang:1.20-alpine').inside('-u root:root') {
@@ -977,7 +946,7 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy to Kubernetes') {
             steps {
                 script {
                     withKubeConfig([credentialsId: KUBECONFIG_CREDENTIALS_ID]) {
@@ -1021,8 +990,19 @@ pipeline {
             }
         }
     }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully'
+        }
+        failure {
+            echo 'Pipeline failed'
+        }
+        always {
+            cleanWs()
+        }
+    }
 }
-===== ./prometheus-operator-components.yaml =====
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -1107,7 +1087,6 @@ spec:
       targetPort: 8080
   selector:
     name: prometheus-operator
-===== ./api/handlers_test.go =====
 package api_test
 
 import (
@@ -1183,7 +1162,6 @@ func TestSearchRecipesByCriteria(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, recipes)
 }
-===== ./api/middleware_test.go =====
 package api_test
 
 import (
@@ -1221,7 +1199,6 @@ func TestRoleBasedAuthorization(t *testing.T) {
 
 	assert.Equal(t, http.StatusForbidden, rr.Code)
 }
-===== ./api/rate_limiter.go =====
 package api
 
 import (
@@ -1278,7 +1255,6 @@ type requestInfo struct {
 	count     int
 	timestamp time.Time
 }
-===== ./api/handlers.go =====
 package api
 
 import (
@@ -1336,7 +1312,6 @@ func SearchRecipesByCriteria(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(recipes)
 }
-===== ./api/middleware.go =====
 // api/middleware.go
 
 package api
@@ -1399,7 +1374,6 @@ func RoleBasedAuthorization(roles ...string) mux.MiddlewareFunc {
 		})
 	}
 }
-===== ./api/rate_limiter_test.go =====
 package api_test
 
 import (
@@ -1437,7 +1411,6 @@ func TestRateLimiter(t *testing.T) {
 	limitedHandler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusTooManyRequests, rr.Code)
 }
-===== ./api/token_helper.go =====
 package api
 
 import (
@@ -1464,7 +1437,6 @@ func GenerateToken(username, role string) (string, error) {
 
 	return tokenString, nil
 }
-===== ./api/router.go =====
 package api
 
 import (
@@ -1567,7 +1539,6 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		Expires: expirationTime,
 	})
 }
-===== ./docker-compose.yml =====
 version: '3.8'
 
 services:
@@ -1600,6 +1571,7 @@ services:
     ports:
       - "9200:9200"
 
+
   jenkins:
     image: jenkins/jenkins:lts
     ports:
@@ -1607,6 +1579,7 @@ services:
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
+      - /path/on/host:/path/in/container
       - /var/run/docker.sock:/var/run/docker.sock
 
   app:
@@ -1632,7 +1605,6 @@ services:
 volumes:
   postgres_data:
   jenkins_home:
-===== ./jenkins-deployment.yaml =====
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -1683,7 +1655,6 @@ spec:
     targetPort: 50000
   selector:
     app: jenkins
-===== ./prometheus-instance.yaml =====
 apiVersion: monitoring.coreos.com/v1
 kind: Prometheus
 metadata:
@@ -1724,7 +1695,6 @@ spec:
     nodePort: 30090
   selector:
     app.kubernetes.io/name: prometheus
-===== ./values.yaml =====
 prometheus:
   prometheusSpec:
     resources:
@@ -1744,7 +1714,6 @@ alertmanager:
       limits:
         memory: "2Gi"
         cpu: "1Gi"
-===== ./prometheus-crds.yaml =====
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -1821,24 +1790,6 @@ spec:
               x-kubernetes-preserve-unknown-fields: true
 
 # Add other necessary CRDs similarly
-===== ./.git/config =====
-[core]
-	repositoryformatversion = 0
-	filemode = true
-	bare = false
-	logallrefupdates = true
-	ignorecase = true
-	precomposeunicode = true
-[remote "origin"]
-	url = https://github.com/josuejero/selestino.git
-	fetch = +refs/heads/*:refs/remotes/origin/*
-[branch "master"]
-	remote = origin
-	merge = refs/heads/master
-===== ./.vscode/settings.json =====
-{
-}===== ./.vscode/tasks.json =====
-===== ./pkg/config/config.go =====
 package config
 
 import (
@@ -1871,7 +1822,6 @@ func Connect() *sql.DB {
     fmt.Println("Successfully connected to the database!")
     return db
 }
-===== ./pkg/config/cache.go =====
 // pkg/config/cache.go
 
 package config
@@ -1908,7 +1858,6 @@ func GetRedis(ctx context.Context, key string) (string, error) {
 func DelRedis(ctx context.Context, key string) error {
 	return RedisClient.Del(ctx, key).Err()
 }
-===== ./pkg/config/search.go =====
 // pkg/config/search.go
 
 package config
