@@ -74,6 +74,9 @@ pipeline {
                             sh 'ls -l ${KUBECONFIG}'
                             sh 'cat ${KUBECONFIG}'
 
+                            echo "Checking for certificate files..."
+                            sh 'ls -l /var/jenkins_home/workspace/Selestino/'
+
                             echo "Applying Kubernetes configurations..."
                             sh 'KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/elasticsearch-deployment.yaml'
                             sh 'KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/postgres-deployment.yaml'
