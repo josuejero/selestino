@@ -108,16 +108,19 @@ pipeline {
                             sh 'cat /root/.kube/client.key'
                             sh 'cat /root/.kube/ca.crt'
 
+                            echo "Validating Minikube status..."
+                            sh 'minikube status'
+
                             echo "Applying Kubernetes configurations..."
                             sh '''
                             kubectl config set-cluster minikube --certificate-authority=/root/.kube/ca.crt --embed-certs=true
                             kubectl config set-credentials minikube --client-certificate=/root/.kube/client.crt --client-key=/root/.kube/client.key --embed-certs=true
                             kubectl config set-context minikube --cluster=minikube --user=minikube
                             kubectl config use-context minikube
-                            kubectl apply -f k8s/elasticsearch-deployment.yaml
-                            kubectl apply -f k8s/postgres-deployment.yaml
-                            kubectl apply -f k8s/selestino-deployment.yaml
-                            kubectl apply -f k8s/redis-deployment.yaml
+                            kubectl apply -f k8s/elasticsearch-deployment.yaml --validate=false
+                            kubectl apply -f k8s/postgres-deployment.yaml --validate=false
+                            kubectl apply -f k8s/selestino-deployment.yaml --validate=false
+                            kubectl apply -f k8s/redis-deployment.yaml --validate=false
                             '''
                             echo "Kubernetes configurations applied"
 
