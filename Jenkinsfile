@@ -84,11 +84,20 @@ pipeline {
                             echo "Installing Docker and kubectl..."
                             sh '''
                             apk --no-cache add curl docker openrc
-                            service docker start
-                            while ! docker info > /dev/null 2>&1; do
-                                echo "Waiting for Docker to start..."
-                                sleep 1
-                            done
+                            if ! (service docker status | grep -q 'is running'); then
+                                if ! (service docker status | grep -q 'is starting'); then
+                                    service docker start
+                                    echo "Checking Docker status..."
+                                    while ! docker info > /dev/null 2>&1; do
+                                        echo "Waiting for Docker to start..."
+                                        sleep 1
+                                    done
+                                else
+                                    echo "Docker is already starting"
+                                fi
+                            else
+                                echo "Docker is already running"
+                            fi
                             docker --version
                             curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
                             chmod +x ./kubectl
