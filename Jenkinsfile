@@ -11,13 +11,30 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                echo "Checking out SCM..."
                 checkout scm
+                echo "SCM checkout completed."
+            }
+        }
+
+        stage('Prepare Environment') {
+            steps {
+                script {
+                    echo "Preparing environment..."
+                    // Copy cert files to the workspace
+                    sh 'cp /ca.crt $WORKSPACE/ca.crt'
+                    sh 'cp /client.crt $WORKSPACE/client.crt'
+                    sh 'cp /client.key $WORKSPACE/client.key'
+                    echo "Cert files copied to workspace:"
+                    sh 'ls -l $WORKSPACE'
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
+                    echo "Setting Docker context to default..."
                     sh 'docker context use default'
                     sh 'docker --version'
                     echo "Building Docker image..."
@@ -30,6 +47,7 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
+                    echo "Listing Docker contexts..."
                     sh 'docker context ls'
                     sh 'docker context use default'
                     echo "Pushing Docker image to repository..."
@@ -44,12 +62,15 @@ pipeline {
         stage('Run Tests') {
             steps {
                 script {
+                    echo "Running tests in Docker container..."
                     docker.image('golang:1.20-alpine').inside('-u root:root') {
                         sh 'apk --no-cache add git'
                         echo "Running tests..."
                         sh 'go test -v ./... -coverprofile=coverage.out'
                         sh 'go tool cover -html=coverage.out -o coverage.html'
                         echo "Tests completed"
+                        echo "Test output:"
+                        sh 'cat coverage.out'
                     }
                 }
             }
@@ -72,22 +93,25 @@ pipeline {
 
                             echo "Creating .kube directory and copying kubeconfig"
                             sh 'mkdir -p /root/.kube'
-                            sh 'cp ${KUBECONFIG} /root/.kube/config'
+                            sh 'cp $WORKSPACE/ca.crt /root/.kube/ca.crt'
+                            sh 'cp $WORKSPACE/client.crt /root/.kube/client.crt'
+                            sh 'cp $WORKSPACE/client.key /root/.kube/client.key'
+                            sh 'cp $WORKSPACE/kubeconfig /root/.kube/config'
 
                             echo "Validating kubeconfig path and contents..."
                             sh 'ls -l /root/.kube/config'
                             sh 'cat /root/.kube/config'
 
                             echo "Checking for certificate files..."
-                            sh 'ls -l /'
-                            sh 'cat /client.crt'
-                            sh 'cat /client.key'
-                            sh 'cat /ca.crt'
+                            sh 'ls -l /root/.kube/'
+                            sh 'cat /root/.kube/client.crt'
+                            sh 'cat /root/.kube/client.key'
+                            sh 'cat /root/.kube/ca.crt'
 
                             echo "Applying Kubernetes configurations..."
                             sh '''
-                            kubectl config set-cluster minikube --certificate-authority=/ca.crt --embed-certs=true
-                            kubectl config set-credentials minikube --client-certificate=/client.crt --client-key=/client.key --embed-certs=true
+                            kubectl config set-cluster minikube --certificate-authority=/root/.kube/ca.crt --embed-certs=true
+                            kubectl config set-credentials minikube --client-certificate=/root/.kube/client.crt --client-key=/root/.kube/client.key --embed-certs=true
                             kubectl config set-context minikube --cluster=minikube --user=minikube
                             kubectl config use-context minikube
                             kubectl apply -f k8s/elasticsearch-deployment.yaml
@@ -107,6 +131,7 @@ pipeline {
 
         stage('Publish Coverage Report') {
             steps {
+                echo "Publishing coverage report..."
                 publishHTML(target: [
                     reportDir: '.',
                     reportFiles: 'coverage.html',
@@ -124,6 +149,7 @@ pipeline {
             echo 'Pipeline failed'
         }
         always {
+            echo "Cleaning up workspace..."
             cleanWs()
         }
     }
