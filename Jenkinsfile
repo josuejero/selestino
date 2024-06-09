@@ -110,11 +110,11 @@ pipeline {
 
                             echo "Validating Minikube status..."
                             sh '''
-                            curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+                            curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-arm64
                             chmod +x minikube
                             mv minikube /usr/local/bin/
                             '''
-                            sh 'minikube status || minikube start'
+                            sh 'minikube status || minikube start --driver=docker'
 
                             echo "Applying Kubernetes configurations..."
                             sh '''
