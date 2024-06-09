@@ -70,6 +70,10 @@ pipeline {
                             sh 'kubectl version --client'
                             echo "kubectl installed successfully"
 
+                            echo "Creating .kube directory and copying kubeconfig"
+                            sh 'mkdir -p /root/.kube'
+                            sh 'cp ${KUBECONFIG} /root/.kube/config'
+
                             echo "Validating kubeconfig path and contents..."
                             sh 'ls -l /root/.kube/config'
                             sh 'cat /root/.kube/config'
