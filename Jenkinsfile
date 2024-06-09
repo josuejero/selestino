@@ -81,15 +81,17 @@ pipeline {
                 script {
                     withKubeConfig([credentialsId: KUBECONFIG_CREDENTIALS_ID]) {
                         docker.image('alpine:latest').inside('-u root') {
-                            echo "Installing kubectl..."
+                            echo "Installing Docker and kubectl..."
                             sh '''
-                            apk --no-cache add curl
+                            apk --no-cache add curl docker
+                            rc-update add docker boot
+                            service docker start
                             curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
                             chmod +x ./kubectl
                             mv ./kubectl /usr/local/bin/kubectl
                             '''
                             sh 'kubectl version --client'
-                            echo "kubectl installed successfully"
+                            echo "Docker and kubectl installed successfully"
 
                             echo "Creating .kube directory and copying kubeconfig"
                             sh 'mkdir -p /root/.kube'
