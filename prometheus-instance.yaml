@@ -12,11 +12,11 @@ spec:
       team: frontend
   resources:
     requests:
-      memory: 400Mi
-      cpu: 200m
+      memory: 2Gi
+      cpu: 1
     limits:
-      memory: 1Gi
-      cpu: 500m
+      memory: 4Gi
+      cpu: 2
   alerting:
     alertmanagers:
       - namespace: default

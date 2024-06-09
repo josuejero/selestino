@@ -2,10 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: selestino
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/path: "/metrics"
-    prometheus.io/port: "8080"
 spec:
   replicas: 1
   selector:
@@ -18,7 +14,7 @@ spec:
     spec:
       containers:
         - name: selestino
-          image: selestino:latest
+          image: josuejero/selestino:latest
           env:
             - name: DB_HOST
               value: postgres
@@ -38,6 +34,13 @@ spec:
               value: http://elasticsearch:9200
           ports:
             - containerPort: 8080
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "0.25"
+            limits:
+              memory: "1Gi"
+              cpu: "0.5"
 ---
 apiVersion: v1
 kind: Service
@@ -50,4 +53,3 @@ spec:
     - protocol: TCP
       port: 8080
       targetPort: 8080
-  type: LoadBalancer

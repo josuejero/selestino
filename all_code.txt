@@ -1,3 +1,6 @@
+
+
+File: ./cmd/main.go
 package main
 
 import (
@@ -24,6 +27,9 @@ func main() {
 		logrus.Fatalf("could not start server: %v", err)
 	}
 }
+
+
+File: ./LICENSE
 MIT License
 
 Copyright (c) 2024 Josue Jeronimo
@@ -45,6 +51,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+File: ./dockerfile
 # Use the official Golang image as the base image
 FROM golang:1.20-alpine
 
@@ -68,6 +77,9 @@ EXPOSE 8080
 
 # Set the entry point to run the application
 CMD ["./selestino"]
+
+
+File: ./k8s/selestino-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -88,7 +100,7 @@ spec:
     spec:
       containers:
         - name: selestino
-          image: selestino:latest
+          image: josuejero/selestino:latest  # Update to use the correct image
           env:
             - name: DB_HOST
               value: postgres
@@ -108,6 +120,7 @@ spec:
               value: http://elasticsearch:9200
           ports:
             - containerPort: 8080
+
 ---
 apiVersion: v1
 kind: Service
@@ -121,13 +134,13 @@ spec:
       port: 8080
       targetPort: 8080
   type: LoadBalancer
+
+
+File: ./k8s/elasticsearch-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: elasticsearch
-  namespace: monitoring
-  labels:
-    app: elasticsearch
 spec:
   replicas: 1
   selector:
@@ -139,13 +152,22 @@ spec:
         app: elasticsearch
     spec:
       containers:
-      - name: elasticsearch
-        image: docker.elastic.co/elasticsearch/elasticsearch:7.10.0
-        ports:
-        - containerPort: 9200
-        env:
-        - name: discovery.type
-          value: single-node
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+          ports:
+            - containerPort: 9200
+          env:
+            - name: discovery.type
+              value: single-node
+          resources:
+            requests:
+              memory: "3Gi"
+              cpu: "1"
+            limits:
+              memory: "6Gi"
+              cpu: "2"
+
+
 ---
 apiVersion: v1
 kind: Service
@@ -157,6 +179,9 @@ spec:
   - port: 9200
   selector:
     app: elasticsearch
+
+
+File: ./k8s/postgres-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -201,13 +226,13 @@ spec:
     - protocol: TCP
       port: 5432
       targetPort: 5432
+
+
+File: ./k8s/kibana-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kibana
-  namespace: monitoring
-  labels:
-    app: kibana
 spec:
   replicas: 1
   selector:
@@ -219,13 +244,19 @@ spec:
         app: kibana
     spec:
       containers:
-      - name: kibana
-        image: docker.elastic.co/kibana/kibana:7.10.0
-        ports:
-        - containerPort: 5601
-        env:
-        - name: ELASTICSEARCH_URL
-          value: http://elasticsearch:9200
+        - name: kibana
+          image: docker.elastic.co/kibana/kibana:7.10.0
+          ports:
+            - containerPort: 5601
+          resources:
+            requests:
+              memory: "1.5Gi"
+              cpu: "0.5"
+            limits:
+              memory: "3Gi"
+              cpu: "1"
+
+
 ---
 apiVersion: v1
 kind: Service
@@ -237,6 +268,9 @@ spec:
   - port: 5601
   selector:
     app: kibana
+
+
+File: ./k8s/redis-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -268,12 +302,18 @@ spec:
     - protocol: TCP
       port: 6379
       targetPort: 6379
+
+
+File: ./initdb/init.sql
 CREATE TABLE IF NOT EXISTS recipes (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     ingredients TEXT NOT NULL,
     instructions TEXT NOT NULL
 );
+
+
+File: ./internal/repository/recipe_repository.go
 package repository
 
 import (
@@ -389,6 +429,9 @@ func (r *RecipeRepository) SearchRecipesByCriteria(criteria map[string]string) (
 
 	return recipes, nil
 }
+
+
+File: ./internal/repository/mock_recipe_repository.go
 package repository
 
 import (
@@ -414,6 +457,9 @@ func (m *MockRecipeRepository) SearchRecipesByCriteria(criteria map[string]strin
 	args := m.Called(criteria)
 	return args.Get(0).([]models.Recipe), args.Error(1)
 }
+
+
+File: ./internal/repository/mock_db.go
 package repository
 
 import (
@@ -441,6 +487,9 @@ func (m *MockDB) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	arguments := m.Called(append([]interface{}{query}, args...)...)
 	return arguments.Get(0).(*sql.Rows), arguments.Error(1)
 }
+
+
+File: ./internal/repository/user_repository_test.go
 package repository_test
 
 import (
@@ -523,6 +572,9 @@ func TestAuthenticateUser(t *testing.T) {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
+
+
+File: ./internal/repository/user_repository.go
 package repository
 
 import (
@@ -568,6 +620,9 @@ func (r *UserRepository) AuthenticateUser(username, password string) (models.Use
 
 	return user, true, nil
 }
+
+
+File: ./internal/repository/recipe_repository_test.go
 package repository_test
 
 import (
@@ -616,6 +671,9 @@ func TestGetAllRecipes(t *testing.T) {
 	assert.Len(t, recipes, 1)
 	assert.Equal(t, "Ceviche", recipes[0].Name)
 }
+
+
+File: ./internal/models/user.go
 package models
 
 type User struct {
@@ -624,6 +682,9 @@ type User struct {
 	Password string `json:"password"`
 	Role     string `json:"role"`
 }
+
+
+File: ./internal/models/recipe.go
 package models
 
 type Recipe struct {
@@ -632,6 +693,9 @@ type Recipe struct {
 	Ingredients  string `json:"ingredients"`
 	Instructions string `json:"instructions"`
 }
+
+
+File: ./README.md
 # Selestino
 
 Selestino is a recipe website where users can input available ingredients and get relevant recipes for Peruvian dishes. This project leverages a variety of technologies including Golang, PostgreSQL, Docker, Kubernetes, and Jenkins for CI/CD.
@@ -823,6 +887,9 @@ Contributions are welcome! Please follow these steps:
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+
+File: ./prometheus-operator-bundle.yaml
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -846,6 +913,9 @@ spec:
             spec:
               type: object
               x-kubernetes-preserve-unknown-fields: true
+
+
+File: ./alertmanager-instance.yaml
 apiVersion: monitoring.coreos.com/v1
 kind: Alertmanager
 metadata:
@@ -878,6 +948,9 @@ spec:
     nodePort: 30093
   selector:
     app.kubernetes.io/name: alertmanager
+
+
+File: ./prometheus_setup_output.log
 customresourcedefinition.apiextensions.k8s.io/alertmanagerconfigs.monitoring.coreos.com unchanged
 customresourcedefinition.apiextensions.k8s.io/podmonitors.monitoring.coreos.com unchanged
 customresourcedefinition.apiextensions.k8s.io/probes.monitoring.coreos.com unchanged
@@ -889,6 +962,9 @@ clusterrole.rbac.authorization.k8s.io/prometheus-operator unchanged
 deployment.apps/prometheus-operator unchanged
 serviceaccount/prometheus-operator unchanged
 service/prometheus-operator unchanged
+
+
+File: ./Jenkinsfile
 pipeline {
     agent any
 
@@ -1003,6 +1079,9 @@ pipeline {
         }
     }
 }
+
+
+File: ./prometheus-operator-components.yaml
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -1087,6 +1166,9 @@ spec:
       targetPort: 8080
   selector:
     name: prometheus-operator
+
+
+File: ./api/handlers_test.go
 package api_test
 
 import (
@@ -1162,6 +1244,9 @@ func TestSearchRecipesByCriteria(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, recipes)
 }
+
+
+File: ./api/middleware_test.go
 package api_test
 
 import (
@@ -1199,6 +1284,9 @@ func TestRoleBasedAuthorization(t *testing.T) {
 
 	assert.Equal(t, http.StatusForbidden, rr.Code)
 }
+
+
+File: ./api/rate_limiter.go
 package api
 
 import (
@@ -1255,6 +1343,9 @@ type requestInfo struct {
 	count     int
 	timestamp time.Time
 }
+
+
+File: ./api/handlers.go
 package api
 
 import (
@@ -1312,6 +1403,9 @@ func SearchRecipesByCriteria(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(recipes)
 }
+
+
+File: ./api/middleware.go
 // api/middleware.go
 
 package api
@@ -1374,6 +1468,9 @@ func RoleBasedAuthorization(roles ...string) mux.MiddlewareFunc {
 		})
 	}
 }
+
+
+File: ./api/rate_limiter_test.go
 package api_test
 
 import (
@@ -1411,6 +1508,9 @@ func TestRateLimiter(t *testing.T) {
 	limitedHandler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusTooManyRequests, rr.Code)
 }
+
+
+File: ./api/token_helper.go
 package api
 
 import (
@@ -1437,6 +1537,9 @@ func GenerateToken(username, role string) (string, error) {
 
 	return tokenString, nil
 }
+
+
+File: ./api/router.go
 package api
 
 import (
@@ -1539,6 +1642,9 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		Expires: expirationTime,
 	})
 }
+
+
+File: ./docker-compose.yml
 version: '3.8'
 
 services:
@@ -1550,7 +1656,6 @@ services:
       POSTGRES_PASSWORD: your_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./initdb:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
     healthcheck:
@@ -1571,17 +1676,6 @@ services:
     ports:
       - "9200:9200"
 
-
-  jenkins:
-    image: jenkins/jenkins:lts
-    ports:
-      - "8080:8080"
-      - "50000:50000"
-    volumes:
-      - jenkins_home:/var/jenkins_home
-      - /path/on/host:/path/in/container
-      - /var/run/docker.sock:/var/run/docker.sock
-
   app:
     build: .
     ports:
@@ -1599,12 +1693,15 @@ services:
       DB_USER: selestino_user
       DB_PASSWORD: your_password
       DB_NAME: selestino
+      JWT_SECRET_KEY: my_secret_key
       REDIS_ADDR: redis:6379
       ELASTICSEARCH_URL: http://elasticsearch:9200
 
 volumes:
   postgres_data:
-  jenkins_home:
+
+
+File: ./jenkins-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -1655,6 +1752,9 @@ spec:
     targetPort: 50000
   selector:
     app: jenkins
+
+
+File: ./prometheus-instance.yaml
 apiVersion: monitoring.coreos.com/v1
 kind: Prometheus
 metadata:
@@ -1669,11 +1769,11 @@ spec:
       team: frontend
   resources:
     requests:
-      memory: 400Mi
-      cpu: 200m
+      memory: 2Gi
+      cpu: 1
     limits:
-      memory: 1Gi
-      cpu: 500m
+      memory: 4Gi
+      cpu: 2
   alerting:
     alertmanagers:
       - namespace: default
@@ -1695,6 +1795,9 @@ spec:
     nodePort: 30090
   selector:
     app.kubernetes.io/name: prometheus
+
+
+File: ./values.yaml
 prometheus:
   prometheusSpec:
     resources:
@@ -1714,6 +1817,9 @@ alertmanager:
       limits:
         memory: "2Gi"
         cpu: "1Gi"
+
+
+File: ./prometheus-crds.yaml
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -1790,6 +1896,9 @@ spec:
               x-kubernetes-preserve-unknown-fields: true
 
 # Add other necessary CRDs similarly
+
+
+File: ./pkg/config/config.go
 package config
 
 import (
@@ -1822,6 +1931,9 @@ func Connect() *sql.DB {
     fmt.Println("Successfully connected to the database!")
     return db
 }
+
+
+File: ./pkg/config/cache.go
 // pkg/config/cache.go
 
 package config
@@ -1858,6 +1970,9 @@ func GetRedis(ctx context.Context, key string) (string, error) {
 func DelRedis(ctx context.Context, key string) error {
 	return RedisClient.Del(ctx, key).Err()
 }
+
+
+File: ./pkg/config/search.go
 // pkg/config/search.go
 
 package config
