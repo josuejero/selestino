@@ -85,7 +85,10 @@ pipeline {
                             sh '''
                             apk --no-cache add curl docker openrc
                             service docker start
-                            sleep 10
+                            while ! docker info > /dev/null 2>&1; do
+                                echo "Waiting for Docker to start..."
+                                sleep 1
+                            done
                             docker --version
                             curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
                             chmod +x ./kubectl
