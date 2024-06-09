@@ -5,7 +5,7 @@ pipeline {
         DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
         KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials'
         DOCKER_REPO = 'josuejero/selestino'
-        KUBECONFIG = "${WORKSPACE}/kubeconfig"
+        KUBECONFIG = "/root/.kube/config"
     }
 
     stages {
@@ -71,24 +71,30 @@ pipeline {
                             echo "kubectl installed successfully"
 
                             echo "Validating kubeconfig path and contents..."
-                            sh 'ls -l ${KUBECONFIG}'
-                            sh 'cat ${KUBECONFIG}'
+                            sh 'ls -l /root/.kube/config'
+                            sh 'cat /root/.kube/config'
 
                             echo "Checking for certificate files..."
-                            sh 'ls -l /var/jenkins_home/workspace/Selestino/'
-                            sh 'cat /var/jenkins_home/workspace/Selestino/client.crt'
-                            sh 'cat /var/jenkins_home/workspace/Selestino/client.key'
-                            sh 'cat /var/jenkins_home/workspace/Selestino/ca.crt'
+                            sh 'ls -l /'
+                            sh 'cat /client.crt'
+                            sh 'cat /client.key'
+                            sh 'cat /ca.crt'
 
                             echo "Applying Kubernetes configurations..."
-                            sh 'KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/elasticsearch-deployment.yaml'
-                            sh 'KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/postgres-deployment.yaml'
-                            sh 'KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/selestino-deployment.yaml'
-                            sh 'KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/redis-deployment.yaml'
+                            sh '''
+                            kubectl config set-cluster minikube --certificate-authority=/ca.crt --embed-certs=true
+                            kubectl config set-credentials minikube --client-certificate=/client.crt --client-key=/client.key --embed-certs=true
+                            kubectl config set-context minikube --cluster=minikube --user=minikube
+                            kubectl config use-context minikube
+                            kubectl apply -f k8s/elasticsearch-deployment.yaml
+                            kubectl apply -f k8s/postgres-deployment.yaml
+                            kubectl apply -f k8s/selestino-deployment.yaml
+                            kubectl apply -f k8s/redis-deployment.yaml
+                            '''
                             echo "Kubernetes configurations applied"
 
                             echo "Listing Kubernetes pods..."
-                            sh 'KUBECONFIG=${KUBECONFIG} kubectl get pods -o wide'
+                            sh 'kubectl get pods -o wide'
                         }
                     }
                 }
