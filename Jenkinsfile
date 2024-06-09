@@ -84,7 +84,6 @@ pipeline {
                             echo "Installing Docker and kubectl..."
                             sh '''
                             apk --no-cache add curl docker
-                            rc-update add docker boot
                             service docker start
                             curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
                             chmod +x ./kubectl
