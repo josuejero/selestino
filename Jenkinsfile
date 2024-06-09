@@ -76,6 +76,9 @@ pipeline {
 
                             echo "Checking for certificate files..."
                             sh 'ls -l /var/jenkins_home/workspace/Selestino/'
+                            sh 'cat /var/jenkins_home/workspace/Selestino/client.crt'
+                            sh 'cat /var/jenkins_home/workspace/Selestino/client.key'
+                            sh 'cat /var/jenkins_home/workspace/Selestino/ca.crt'
 
                             echo "Applying Kubernetes configurations..."
                             sh 'KUBECONFIG=${KUBECONFIG} kubectl apply -f k8s/elasticsearch-deployment.yaml'
