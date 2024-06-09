@@ -2,9 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kibana
-  namespace: monitoring
-  labels:
-    app: kibana
 spec:
   replicas: 1
   selector:
@@ -16,13 +13,19 @@ spec:
         app: kibana
     spec:
       containers:
-      - name: kibana
-        image: docker.elastic.co/kibana/kibana:7.10.0
-        ports:
-        - containerPort: 5601
-        env:
-        - name: ELASTICSEARCH_URL
-          value: http://elasticsearch:9200
+        - name: kibana
+          image: docker.elastic.co/kibana/kibana:7.10.0
+          ports:
+            - containerPort: 5601
+          resources:
+            requests:
+              memory: "1.5Gi"
+              cpu: "0.5"
+            limits:
+              memory: "3Gi"
+              cpu: "1"
+
+
 ---
 apiVersion: v1
 kind: Service

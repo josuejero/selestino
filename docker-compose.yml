@@ -9,7 +9,6 @@ services:
       POSTGRES_PASSWORD: your_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./initdb:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
     healthcheck:
@@ -30,18 +29,6 @@ services:
     ports:
       - "9200:9200"
 
-  jenkins:
-    image: jenkins/jenkins:lts
-    user: root  # Add this line to run Jenkins as root
-    ports:
-      - "8080:8080"
-      - "50000:50000"
-    volumes:
-      - jenkins_home:/var/jenkins_home
-      - /Users/wholesway/Documents/Programming/Projects/selestino:/path/in/container
-      - /var/run/docker.sock:/var/run/docker.sock
-
-
   app:
     build: .
     ports:
@@ -59,9 +46,9 @@ services:
       DB_USER: selestino_user
       DB_PASSWORD: your_password
       DB_NAME: selestino
+      JWT_SECRET_KEY: my_secret_key
       REDIS_ADDR: redis:6379
       ELASTICSEARCH_URL: http://elasticsearch:9200
 
 volumes:
   postgres_data:
-  jenkins_home:
