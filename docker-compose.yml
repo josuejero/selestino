@@ -50,5 +50,14 @@ services:
       REDIS_ADDR: redis:6379
       ELASTICSEARCH_URL: http://elasticsearch:9200
 
+  jenkins:
+    image: jenkins/jenkins:lts
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_data:/var/jenkins_home
+
 volumes:
   postgres_data:
+  jenkins_data:

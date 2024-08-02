@@ -47,9 +47,12 @@ kind: Service
 metadata:
   name: selestino
 spec:
+  type: NodePort
   selector:
     app: selestino
   ports:
     - protocol: TCP
       port: 8080
       targetPort: 8080
+      nodePort: 30000  # You can choose any available node port between 30000-32767
+

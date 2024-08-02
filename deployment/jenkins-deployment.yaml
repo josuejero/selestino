@@ -42,7 +42,7 @@ spec:
   - name: http
     port: 8080
     targetPort: 8080
-    nodePort: 30000
+    nodePort: 30001  # Specify the NodePort here
   - name: agent
     port: 50000
     targetPort: 50000
