@@ -1,0 +1,45 @@
+.
+├── pom.xml
+├── project-info.txt
+├── project_structure.txt
+├── project_summary.txt
+├── src
+│   ├── main
+│   │   ├── java
+│   │   └── resources
+│   └── test
+│       └── java
+├── target
+│   ├── classes
+│   ├── generated-sources
+│   │   └── annotations
+│   ├── generated-test-sources
+│   │   └── test-annotations
+│   ├── maven-archiver
+│   │   └── pom.properties
+│   ├── maven-status
+│   │   └── maven-compiler-plugin
+│   ├── selestino-1.0-SNAPSHOT.jar
+│   └── test-classes
+│       └── SampleTest.class
+├── update_project_summary.sh
+└── venv
+    ├── bin
+    │   ├── Activate.ps1
+    │   ├── activate
+    │   ├── activate.csh
+    │   ├── activate.fish
+    │   ├── pip
+    │   ├── pip3
+    │   ├── pip3.12
+    │   ├── python -> python3.12
+    │   ├── python3 -> python3.12
+    │   ├── python3.12 -> /opt/homebrew/opt/python@3.12/bin/python3.12
+    │   └── wsdump
+    ├── include
+    │   └── python3.12
+    ├── lib
+    │   └── python3.12
+    └── pyvenv.cfg
+
+23 directories, 20 files

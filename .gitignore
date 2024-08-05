@@ -132,3 +132,4 @@ dist
 .DS_Store
 jenkins_backup.tar
 jenkins/jenkins_backup.tar
+venv
