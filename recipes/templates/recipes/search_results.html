@@ -1,0 +1,13 @@
+{% load static %}
+<!-- recipes/templates/recipes/search_results.html -->
+<ul>
+    {% for recipe in recipes %}
+        <li>{{ recipe.title }}</li>
+    {% empty %}
+        <li>No recipes found.</li>
+    {% endfor %}
+</ul>
+<a href="{% url 'search_recipes' %}">Search Again</a>
+
+<!-- Add this line in your <head> tag in each HTML file -->
+<link rel="stylesheet" href="{% static 'recipes/styles.css' %}">
