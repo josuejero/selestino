@@ -12,6 +12,13 @@ def run_command(command, description):
     return output
 
 def main():
+    # Prompting user for custom names and paths
+    project_name = input("Enter your Django project name (e.g., 'myproject'): ")
+    db_name = input("Enter your PostgreSQL database name (e.g., 'myprojectdb'): ")
+    db_user = input("Enter your PostgreSQL username (e.g., 'myprojectuser'): ")
+    db_password = input("Enter your PostgreSQL password: ")
+    github_username = input("Enter your GitHub username: ")
+    
     verification_output = []
 
     # Step 1: Install Python and Django
@@ -44,7 +51,7 @@ def main():
 
     # 1.5 Check Django Project Structure
     verification_output.append("Check Django Project Structure:")
-    project_structure = run_command("ls selestino", "Listing Django project files")
+    project_structure = run_command(f"ls {project_name}", f"Listing Django project files in {project_name}")
     verification_output.append(project_structure)
 
     # Step 2: Database Setup with PostgreSQL
@@ -62,7 +69,7 @@ def main():
 
     # 2.3 Test Django-PostgreSQL Connection
     verification_output.append("Test Django-PostgreSQL Connection:")
-    migrate_result = run_command("python manage.py migrate", "Testing database migration")
+    migrate_result = run_command(f"python manage.py migrate", "Testing database migration")
     verification_output.append(migrate_result)
 
     # Step 3: Version Control with Git
