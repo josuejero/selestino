@@ -48,15 +48,12 @@ Your branch is up to date with 'origin/master'.
 Changes not staged for commit:
   (use "git add <file>..." to update what will be committed)
   (use "git restore <file>..." to discard changes in working directory)
-	modified:   selestino/settings.py
-
-Untracked files:
-  (use "git add <file>..." to include in what will be committed)
-	verification_output.txt
-	verify_setup.py
+	modified:   verify_setup.py
 
 no changes added to commit (use "git add" and/or "git commit -a")
 Check Git Log:
+6cf50c4 updates
+1719fbc Update settings for project
 6330aa6 Initial commit
 88b8c4a update
 9f3c51e update
