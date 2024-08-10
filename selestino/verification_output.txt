@@ -1,0 +1,225 @@
+Step 1: Install Python and Django
+Check Python Installation:
+Python 3.12.4
+Check pip and virtualenv Installation:
+pip 24.2 from /Users/wholesway/Documents/Programming/Projects/selestino/env/lib/python3.12/site-packages/pip (python 3.12)
+virtualenv 20.26.3 from /opt/homebrew/Cellar/virtualenv/20.26.3/libexec/lib/python3.12/site-packages/virtualenv/__init__.py
+Check Virtual Environment Activation:
+Virtual environment is activated: /Users/wholesway/Documents/Programming/Projects/selestino/env
+Check Django Installation:
+5.1
+Check Django Project Structure:
+__init__.py
+__pycache__
+asgi.py
+settings.py
+urls.py
+wsgi.py
+
+Step 2: Database Setup with PostgreSQL
+Check PostgreSQL Installation:
+/opt/homebrew/bin/psql
+Verify PostgreSQL Database Creation:
+List of databases
+   Name    |   Owner   | Encoding | Collate | Ctype |    Access privileges    
+-----------+-----------+----------+---------+-------+-------------------------
+ postgres  | wholesway | UTF8     | C       | C     | 
+ recipedb  | selestino | UTF8     | C       | C     | 
+ selestino | wholesway | UTF8     | C       | C     | =Tc/wholesway          +
+           |           |          |         |       | wholesway=CTc/wholesway+
+           |           |          |         |       | josuejero=CTc/wholesway
+ template0 | wholesway | UTF8     | C       | C     | =c/wholesway           +
+           |           |          |         |       | wholesway=CTc/wholesway
+ template1 | wholesway | UTF8     | C       | C     | =c/wholesway           +
+           |           |          |         |       | wholesway=CTc/wholesway
+ wholesway | postgres  | UTF8     | C       | C     | 
+(6 rows)
+Test Django-PostgreSQL Connection:
+Operations to perform:
+  Apply all migrations: admin, auth, contenttypes, sessions
+Running migrations:
+  No migrations to apply.
+
+Step 3: Version Control with Git
+Check Git Status:
+On branch master
+Your branch is up to date with 'origin/master'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   selestino/settings.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	verification_output.txt
+	verify_setup.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Check Git Log:
+6330aa6 Initial commit
+88b8c4a update
+9f3c51e update
+ee1b42c Add basic recipe search functionality
+5f1f33a Initial commit
+e14fd06 changes
+0768eaa Update .gitignore to exclude unnecessary files
+40ceae0 Stop tracking .DS_Store
+9b9988c Your commit message here
+14c1e24 Your commit message
+92ecd6a Your commit message
+aacd002 Your commit message
+020ce48 update
+cec3886 Remove large file from LFS
+c1133fa Add large file with Git LFS
+2699ef2 organizing changes
+d5c9b13 update
+bf693f6 update
+30536c5 update
+1177f3f update
+8c529ce update
+51ff3cb update
+ea2e616 update
+a3ee8ff update
+84f8a59 update
+5c9ebed update
+ef3e7fa update
+964e087 update
+010d58d update
+6fd5b0e update
+1397424 update
+97a43be update
+30b3401 update
+41b1b52 update
+82c7145 update
+c4d3fe7 update
+738fa41 update
+05ba4fe update
+b3cbcf1 update
+259eedb update
+133b543 udpate
+deb8f59 udpate
+9237c44 update
+50545c1 update
+69ed11b update
+0d73ec7 update
+92105d7 update
+9a3af75 update
+066baf6 update
+1439e82 update
+96fd422 update
+4624776 update
+012f33c update
+c1bf03d update
+fb95c2c update
+40c02e2 update
+33ae87a update
+e67725f update
+88f842c update
+71fc09c update
+0e72a5f update
+d69b292 update
+9a00ffe update
+ef7fe3c update
+8a8a66f update
+23ddf44 update
+cac80d8 update
+a3b90e5 update
+9332551 update
+60c619a update
+08689d3 update
+68a84bf update
+3983ded update
+95e460e update
+ba58384 update
+3e2d552 update
+89bdde9 update
+63a1511 update
+811392f update
+5f61b75 update
+a573bca update
+6600eaf update
+272c19c update
+bda5aa1 update
+4262789 update
+c51fe04 update
+adf7d0e update
+7c63f35 update
+bbfb474 update
+2d33694 update
+66028e9 update
+1b44e10 update
+7ff84d6 update
+0380454 update
+3e4c25c update
+a8e99c1 update
+be33657 update
+d382239 update
+b7fe5c3 update
+c8869e3 update
+6d7f004 update
+f0f33ed update
+18a60c5 update
+ff10f70 update
+30f87ee update
+3223a68 update
+7519f13 update
+b7ec9d3 update
+6644bb3 Implement search indexing with Elasticsearch
+5653518 Implement search indexing with Elasticsearch
+b122231 Add API handlers for recipes
+91453c2 Add API handlers for recipes
+6d29716 Implement caching with Redis
+5431d23 Implement caching with Redis
+b6f5a4d Add token helper and update tests with valid tokens
+4f04232 Add token helper and update tests with valid tokens
+5be16ab Add continuous deployment and logging enhancements
+763f527 Add continuous deployment and logging enhancements
+118b657 jenkins
+7af6110 jenkins
+dd029f8 Add tests for user authentication and enhanced search functionality
+4543fdc Add tests for user authentication and enhanced search functionality
+2ed32ac Add MIT License
+f06186d Add MIT License
+17e7d09 readme
+f69b6eb readme
+133788b update
+59fe5b7 update
+1ad486c update
+2ced900 update
+f84b696 jenkins
+439b026 jenkins
+d2ed658 update
+f2edc01 update
+0414ad7 jenkins
+7a9c489 jenkins
+ada213e jenkins
+f653883 jenkins
+285dfe8 Update Jenkinsfile with correct credentials ID
+334ed27 Update Jenkinsfile with correct credentials ID
+0646c92 Merge remote-tracking branch 'origin/master'
+5f19669 Merge remote-tracking branch 'origin/master'
+2dffcf2 Committing changes before merge
+7f68e39 Committing changes before merge
+ec3f0c6 Rename jenkinsfile to Jenkinsfile
+588d155 Rename jenkinsfile to Jenkinsfile
+10ddd5d Add Jenkinsfile for CI/CD pipeline
+6574162 Add Jenkinsfile for CI/CD pipeline
+645414b update
+f567102 update
+c4ff948 Set up Docker for containerization
+bc037b0 Set up Docker for containerization
+4683d59 Add unit tests for repository methods
+cb370ab Add unit tests for repository methods
+a40b876 Implement search functionality by ingredients
+969efd5 Implement search functionality by ingredients
+508d04b Add recipe repository and API endpoints
+eff57b0 Add recipe repository and API endpoints
+861d8d9 Set up PostgreSQL connection
+4604125 Set up PostgreSQL connection
+b195b79 Set up basic API structure with Gorilla Mux
+8719e79 Set up basic API structure with Gorilla Mux
+6e13de7 Initial project setup
+1aa8153 Initial project setup
+25c567f Initial commit
+6eb7ae1 Initial commit
