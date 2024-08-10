@@ -133,3 +133,8 @@ dist
 jenkins_backup.tar
 jenkins/jenkins_backup.tar
 venv
+
+env/
+__pycache__/
+*.py[cod]
+db.sqlite3
