@@ -29,8 +29,8 @@ pipeline {
                         echo "Upgrading pip..."
                         pip install --upgrade pip
                         pwd
-                        echo "Installing dependencies from selestino/requirements.txt..."
-                        pip install -r selestino/requirements.txt
+                        echo "Installing dependencies from requirements.txt..."
+                        pip install -r requirements.txt
                         echo "Setup completed!"
                     '''
                 }
