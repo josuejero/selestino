@@ -83,8 +83,10 @@ pipeline {
     post {
         always {
             script {
-                echo 'Cleaning workspace after job completion...'
-                cleanWs()
+                node {
+                    echo 'Cleaning workspace after job completion...'
+                    cleanWs()
+                }
             }
         }
         success {
