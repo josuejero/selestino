@@ -1,7 +1,19 @@
 {% load static %}
-<h1>Recipe List</h1>
-<ul>
-    {% for recipe in recipes %}
-    <li><a href="{% url 'recipe_detail' recipe.id %}">{{ recipe.title }}</a></li>
-    {% endfor %}
-</ul>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe List</title>
+    <link rel="stylesheet" href="{% static 'recipeservice/css/style.css' %}">
+</head>
+<body>
+    <h1 id="title">Recipe List</h1>
+    <ul>
+        {% for recipe in recipes %}
+        <li><a href="{% url 'recipe_detail' recipe.id %}">{{ recipe.title }}</a></li>
+        {% endfor %}
+    </ul>
+    <script src="{% static 'recipeservice/js/script.js' %}"></script>
+</body>
+</html>

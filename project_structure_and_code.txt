@@ -1,5 +1,7 @@
 selestino/
     .DS_Store
+    requirements.txt
+    output.log
     generate_project_structure.py
 
     # Content of generate_project_structure.py:
@@ -30,6 +32,7 @@ selestino/
 
     .gitignore
     .gitattributes
+    Jenkinsfile
     project_structure_and_code.txt
     selestino/
         verify_setup.py
@@ -133,6 +136,7 @@ selestino/
             main()
 
         verification_output.txt
+        requirements.txt
         manage.py
 
         # Content of manage.py:
@@ -728,7 +732,9 @@ selestino/
         static/
             recipeservice/
                 css/
+                    style.css
                 js/
+                    script.js
     .git/
         ORIG_HEAD
         config
@@ -740,14 +746,21 @@ selestino/
         COMMIT_EDITMSG
         FETCH_HEAD
         objects/
+            61/
+                ba3c261840f7265ba789d08d18345cc12e8a0e
+            0d/
+                abe976a9aeee5494762cd3020982081dd62bdd
             95/
                 3d742086b64d7ada17575a069be9fc4f0fa082
             92/
                 b70c29063e75dcb5aa084cab3ca7450b5b3150
+                8a4d3766a3573b3bc3015ade9095127c3e69b0
                 5d6e740268967963d3f2dd1ad96a0ce3a08a98
                 24c67c8b8c41eaf827657879da174cd7eb7354
             0c/
                 f8a04f6a61443588bd12fe6b0debf756c14033
+            3e/
+                f20519d7b069bd6fba0ec27a2de122bf70d647
             50/
                 000ccd54c837167ab31f6a0696614f0fcce51e
             68/
@@ -755,18 +768,30 @@ selestino/
             57/
                 760814489b55373e21cb3106dea98133e5b53e
                 3467f5a71d2a2d2c5ae6d8611c70f95e126e43
+                1c76d1968e69c49c8a50fb098348e7c3eb9f4e
             3b/
                 0e04887145f2fb573b839a931c94aa57359c7e
+                c9366cc00b696a77eb1447e73088f83b1cb683
             9b/
                 a164080cc04d6c67b71d82d1adfe3ea68a8ea8
             9e/
                 2968e4d777246ebd282adccfa2dfb7ba958742
                 c37bc6eba43a42599857fd84e4d68ad6b4ef9d
+            04/
+                5b1ec71b4b9d0f3064da52d0478a15a9a6c2b3
+            6a/
+                47e70892e8bb19a892cbd8c375065e8158b98f
             35/
                 31f96b1326197877772a08ada29c61dc8069f9
+                c01e57312b99eb31d5c0ea6b03c59393dac27c
                 eb1ddfbbc029bcab630581847471d7f238ec53
+                ed6804458ae390e4376e1cebb6f630e8fe956f
+            56/
+                67af52f471e6e4472f4a338538c6deec632121
             51/
                 90d4215d357458438d62e1167a19ec8417e66e
+            3d/
+                eeb01aa07c0350643ab1995c43bbedb550c54b
             67/
                 5e9b55fb381b000559f7f8e07756a2c644ec1a
                 d8f92216a874405a9dbaca5b86112a72c039da
@@ -775,6 +800,11 @@ selestino/
                 4f9586477862707f5c40eab6f31c07ad8b5912
             0e/
                 57972446175deb7e9204ff7fda2fcc7c47e632
+            60/
+                f23ee7846239d81349ef57a233de586997e38e
+                7687b5b78168f8d562ac1ce51d7006f1445000
+            5a/
+                716c798dd4764e889a8d4230cf2b321012ba31
             5f/
                 1f33a46ee15e7e530fed3bb156733aa2d93a72
                 31d99b2b275c3683a80af420dfa3bbf358c35d
@@ -784,21 +814,40 @@ selestino/
                 22bfaa770daa6a81286206302b6275d632607f
             a4/
                 4ff063813b8ccf610e61d6da178f7307935dbe
+            a3/
+                263b5739d31842e4af16612c55d9574254d7c6
             b5/
                 1144080ecc717baba34a917adec0da373a7c0e
+            ac/
+                6e07a1d1c364a54e622908e48a84ab211f1b4d
             ad/
                 2982006f5f91669596a9267c29611443074825
                 964d7b17ba025d3488eee2d9e0f887e73fc7b1
             bb/
+                afb29cadfc9de5f4b603cb8a420e3deab8b878
                 69c3e26399a63c627cefcf7e64dba30c3da5f6
+            d7/
+                46fa3a350f3d2cd03337f959b896fe4b8de161
+            d0/
+                fcd53c97011c086aa396aecee8bc4568d3c7d0
             b4/
                 4088f87eef3b0f069481a1c11d6b36bc969bd2
+            a2/
+                7fdfb897ef757aa83d4445f9d43c4e52ecb080
+            bd/
+                22b6fe01a2b1bfe09d3fbb99cc7aef762979bb
+            d6/
+                e1191236f69bbf11de65be9fd09cd51adb1b73
             bc/
+                d9ec2be6f72e0280069fc51378ee9cce5af085
                 1decb354167088b02e91c7e08e54424223b42b
             e5/
                 e2f36ca4fc992257fd0bd6b54e31d48406ee3e
             e2/
                 51cde18a809fdcc2504c92136dd6b635be7cc7
+                c4b9ae60703006a876aad1c52e2b2b9727e800
+            f4/
+                243ddf1d1465975c53d030d8e8b5fddd04c44d
             c7/
                 cee72e870aa265a47a71d2de804c65c721ca66
             ee/
@@ -808,17 +857,27 @@ selestino/
             f5/
                 fd22ea3d637bb7208b617375d27025c1bed8e3
                 d62aab0044ec4f3933cf186756dedd23db5231
+            e3/
+                979ff58b4881a233dd2ba19e4943594dc97d20
             cf/
                 315cafc3390b7274a9d0986a196ddee0db6f55
             e4/
                 75a019acfb5e0e5a2780e4ab3feb83a0707e52
             fb/
                 d6b99d39c740305b83430d79b828b9f29d6b4e
+            c1/
+                f56149c063f3c580c6b7212894ad99236018ba
+                b09a10827f0acf27e4645e468301677586d18a
+            4e/
+                490eab1427dac749ea799855c1c75180ec256d
             20/
                 7ce0745df08efdea808aaab0c14f2084fb09f5
                 e5f45db04c623b0025d2a4ce9d99e90ed64d3c
+                99ad4d3d8e5b513a403ebdd2dcc860ccae55cb
             18/
                 ff2cc856434103ec0159d6d368eeefb801a758
+            27/
+                a44b61a283e495171d43544a9f754a47bd4dcd
             4b/
                 cb9bbf32a258a8586a2e21246f0ca36d2000b0
             pack/
@@ -826,23 +885,31 @@ selestino/
                 pack-068120a0efebbb4e2e739403742a1fa948fedd27.idx
             7d/
                 199d2205997f8286faf49baba7946771ffa85f
+            29/
+                0e3007ba3297ec7dbab1ffc3a1079ec06e5a56
             7c/
                 e503c2dd97ba78597f6ff6e4393132753573f6
             73/
                 156d17b5cf02bea58cd1dcf3c94891ef33ace9
             87/
                 dccf15ed906cfdb5034b1444a35328f01c714b
+                33eb665e66c1d4cad7c3e34bcb4f158b995683
             1a/
                 7524055134bdd637d4a683e4831fe921d60ede
                 a091da946b7cfd877812325d79a619753c3641
             28/
                 a3745d4387a9294167a2916c9f1f3b854722a5
+                1150026b2927e55cf6efed64478feffe07c39b
             17/
                 19fbce9fbbf74de1cbef561df9c6243bdef9f9
             7e/
+                51161af61a7eb15f9a215e8b46353d186073bc
                 46c33707ffd9c461ce9e22c53697f22fc8659c
             10/
                 890fe9f7e48f82fba5254e37f3ea0f6ca6132c
+                be74d08961696dddfefdb137b30bde7edd0f14
+            19/
+                032ce951b9dad55384daeab2e2e64870ee571b
             26/
                 d33521af10bcc7fd8cea344038eaaeb78d0ef5
                 5964faab358d21257e6966e11ba93f5e363656
@@ -855,6 +922,13 @@ selestino/
                 341ad6835c32a3e6b34d274e8b43e579bf4e8e
             86/
                 8447e3249386faccc505dffb05a5cf6f23aead
+            72/
+                2a06f9623c906cfb21682678cf8bd8f60183b6
+            44/
+                2e28e8693bbac569696b5e1bd3a89d8f24c802
+                f71a607220f3b8baae001542f9bd29fc89b1e7
+            2f/
+                93abf538486dd6961cf246a872c89596e184b4
             43/
                 1ef0f85304763239da2dabd99423181327bf17
                 3e7c8ecb22ff251cbae3d7cb282c121320ff6b
@@ -864,6 +938,8 @@ selestino/
                 3c51ee8ed8b2785846c1d8992d7248def976cb
             07/
                 6f1ba379086ccbbe90577c79da7919c2dcc921
+            6e/
+                8ad7195503b13ce31e06df9883e0c94cba416f
             9a/
                 c4aa93c518c39d74ea2b66ddb6bd11c95266f8
             09/
@@ -876,53 +952,76 @@ selestino/
                 97603c6a5e1b17afb297ece98a9b44ef2579bf
             65/
                 ea82e3b1d97a0aa760a99c2238671c63d7b7d5
+            62/
+                1c56565d38595d40702d5d73a65c221dae3c5d
+            3a/
+                1976851bc6170ec7febd867437ef6e98668dc1
             3f/
                 1e5d2272b6db4e812fabbc5454fbe8215dfb85
             08/
+                7d8003a711adc3f0c48e398bcdc6b655d4e8dd
                 330f2ef2ac2d5a4e1d37dabf96b5da72269be9
             6c/
                 f50c464968f05df7ec81a1d7d9ba752488f6d8
             99/
                 d08f4b614cff182d824a5582d661525377f26d
+                03955900f2c5feb1e16ca101e0b9fbc7cdf092
+                783ac54fe7ee7b5c36ab19e2147e47d2304564
                 d91781151f20a3c34a69a52cff33ddebf85192
             55/
                 ea778fda9ba3c89bf403a64c48fdc3f48c89fa
             97/
                 56c4d25d72a8d3d7ae33cc1892dbbc18b697b0
+                417d0ff321cca43e06b7458b80c443d5d7f5f6
             63/
                 a63497ba030586c0d5d1a8ec30f2b1c7d3aaaf
                 30aa6cc6131ff999e3bd557346a57a0dfe1a95
             0f/
                 37aac357053588cbe43a48c2e3522525a489d4
                 d404b82d8022d0b4a85e158668bb9fc2769dbe
+            0a/
+                8dd780b60dd3448e337a4f0d52781343c53eb0
             64/
+                0285e41a86d4d405ad04d65ff21dd2484b928b
                 8384df67a6ca5951190ec2315742edf34b8d41
                 1feb098a3a1ad92ee468cc9ab41506185c2e49
             ba/
                 8cf55df395cf7c61ae06830647034b2477f7d1
             a0/
                 70678a8d3daee8a93f274b6ac646a4326ee4f6
+                6f61121033496de6b87818044e20a22e83bb01
             dd/
                 e8d9e52337777524f67a1b3d677e8fcd436a38
+            b6/
+                79d603499111e95a26d28cb94a2236e39ba7aa
+                9f02c3db1157003a3b74385ec92b0947346e00
             a9/
                 9ca7f98442e52208261ce1ef905644184abf59
             d5/
                 3bfdc41b21e2442ad027d96ac4cc8247d1ff21
+            d2/
+                b6342a60015c3aaecd65cb5246b0a17bd4f023
             aa/
                 e4437eae3bb0623eccd835b28d886b9bdb3d18
                 00ffab7828f4818589659c804ec2cfd99baed3
             af/
                 662e3faa7f3e6108b9c272e964d42562faf29c
                 c144f5095a3fa7220f628188ab8331a5244376
+            db/
+                dd2bb00d7efbb51c30d1959d254ee3ad408c00
             b9/
                 5f3455f188ba696cc903aec6aed448ef795269
             ef/
                 bdce6dc4bc4d897e83466645600d4eaed27f5f
+            c3/
+                f22d6c3f71b11e9327ac8dd216dd20a0832ff4
             e1/
+                25515c2d4916c1c035b996cc01fd022854d7e5
                 4fd06362d16537ee75f3720594cb22e07fbcc4
             cd/
                 ff5d4e99af7446db16465c7e330881459aac0a
             cc/
+                61f2c31bb9542fb10951dbb2235405c9d9eeba
                 a04651c9f6395e6450ca9c748fe3f13ee50c65
             f0/
                 43bd6a52ff3034badce4ea06ec85d08b1bac66
@@ -935,8 +1034,11 @@ selestino/
             f8/
                 77edd3edb0da5f99caf867dc673b02a95b068e
             ce/
+                1cbf714209f45d018eb27a49cc64e1ff3e41fe
                 63f7f9e293c1c1829e9aef5361e0820ae3e346
+                745249954da7cf3dcb0fb2705f1fcc01ffed6b
             e0/
+                8f725d01e2362d284bb8ac3f0691545c633192
                 9f00dac767d374de41e793740546e6ab3f9c1e
             46/
                 3551f3caf88a9c75be03ac76ed9413653b5a8d
@@ -947,28 +1049,42 @@ selestino/
                 fe060c65559b73ee5a8aac1d47bc88d189367e
             77/
                 42007394da5baf57cabe05ac383f41d7b80eae
+                74b3c3b97cff35139cb7fe157e357b85800bba
             48/
+                1e15de29508c805a4b0545c558d549d0678fa3
                 548b542f7df91c1c1d0e339068636437c8fdb8
             24/
                 586d5e91eae70bf5dac3a0bc4518fd7f7fe047
                 3e423c6fc96f711d39ab235fa6000e99e7ae1c
                 9db0c65e14a4c9a02c73e9c6e6152089257012
+            23/
+                a8e673cee1ad2cc68b98c0fe2492819b540fa0
             4f/
+                665d19b5721a9aee51cb70a7f38654388e92f1
                 be11cdbcca38de9e9d39101026b763f75376f0
             8d/
                 59efad3679f4c5c53e56fb5610ac5200567f70
+                ce4e44e5263843e5d9efc636af8af6a1699fd5
             8c/
                 38f3f3dad51e4585f3984282c2a4bec5349c1e
             85/
                 31da01388667f27ffb632b9ba6bd3292ecbc25
             71/
+                d96cf1433fb4293e34dd9f5cb6a98077b2acaf
                 2ab9d985c20018a0c97b93d2148ac1ffe588a5
             76/
                 8d8b9f78614af6781eb96b5116a80cff9aeefd
+                136967dd4d8108eeee577083174172e890a6fd
             1c/
+                bef161f6459c7db209538321e0b2517b7523a1
                 60dbbb49eea6b756663df07c699222fcece365
             2e/
+                c2434077d2570a8fa4f4dc43de87d579e4eef1
                 48f604c50f0debe001a2cdfed1502e34104836
+            47/
+                fe25b5972e7ba0c4d56bf0f264d5294403adaf
+            7f/
+                dc4e1180b51954b2787594372da17c05527ed5
             7a/
                 80401024b9b57a37572113ca3ba30aa672c0b5
             14/
