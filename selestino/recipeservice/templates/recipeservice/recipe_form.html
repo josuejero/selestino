@@ -1,0 +1,8 @@
+<h1>Add New Recipe</h1>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save</button>
+</form>
+<link rel="stylesheet" type="text/css" href="{% static 'recipeservice/css/style.css' %}">
+
