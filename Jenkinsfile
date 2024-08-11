@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         DATABASE_URL = "postgres://josuejero:peruano1@localhost:5432/selestino"
+        PATH = "/opt/homebrew/opt/postgresql@14/bin:${env.PATH}"
     }
 
     stages {
