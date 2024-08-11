@@ -28,6 +28,7 @@ pipeline {
                         source env/bin/activate
                         echo "Upgrading pip..."
                         pip install --upgrade pip
+                        pwd
                         echo "Installing dependencies from selestino/requirements.txt..."
                         pip install -r selestino/requirements.txt
                         echo "Setup completed!"
