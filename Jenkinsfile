@@ -9,6 +9,9 @@ pipeline {
         stage('Checkout') {
             steps {
                 script {
+                    echo 'Cleaning the workspace...'
+                    cleanWs()
+                    echo 'Workspace cleaned!'
                     echo 'Checking out the code from GitHub...'
                     git branch: 'master', url: 'https://github.com/josuejero/selestino.git'
                     echo 'Checked out code successfully!'
@@ -19,9 +22,6 @@ pipeline {
         stage('Setup') {
             steps {
                 script {
-                    echo 'Cleaning the workspace...'
-                    cleanWs()
-                    echo 'Workspace cleaned!'
                     sh '''
                         echo "Creating virtual environment..."
                         python3 -m venv env
