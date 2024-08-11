@@ -24,8 +24,6 @@ pipeline {
                     echo "Looking for requirements.txt:"
                     ls -la
                     pip install --upgrade pip
-                    pwd
-                    pip install -r requirements.txt || { echo "requirements.txt not found!"; exit 1; }
                 '''
             }
         }
