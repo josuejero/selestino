@@ -41,8 +41,10 @@ pipeline {
             steps {
                 script {
                     sh '''
+                        echo "Navigating to the Django project directory..."
+                        cd selestino
                         echo "Activating virtual environment..."
-                        source env/bin/activate
+                        source ../env/bin/activate
                         echo "Running database migrations..."
                         python manage.py migrate
                         echo "Migrations completed!"
@@ -55,8 +57,10 @@ pipeline {
             steps {
                 script {
                     sh '''
+                        echo "Navigating to the Django project directory..."
+                        cd selestino
                         echo "Activating virtual environment..."
-                        source env/bin/activate
+                        source ../env/bin/activate
                         echo "Running Django tests..."
                         python manage.py test
                         echo "Tests completed!"
