@@ -8,12 +8,24 @@ pipeline {
                     // Clean the workspace
                     cleanWs()
                 }
+
+                // Debugging: Show the current directory and its contents
+                sh '''
+                    echo "Current Directory:"
+                    pwd
+                    echo "Contents of the Directory:"
+                    ls -la
+                '''
+
                 // Install dependencies in a virtual environment
                 sh '''
                     python3 -m venv env
                     source env/bin/activate
+                    echo "Looking for requirements.txt:"
+                    ls -la
                     pip install --upgrade pip
-                    pip install -r requirements.txt
+                    pwd
+                    pip install -r requirements.txt || { echo "requirements.txt not found!"; exit 1; }
                 '''
             }
         }
