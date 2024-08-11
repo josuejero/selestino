@@ -8,9 +8,11 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                echo 'Checking out the code from GitHub...'
-                git branch: 'master', url: 'https://github.com/josuejero/selestino.git'
-                echo 'Checked out code successfully!'
+                script {
+                    echo 'Checking out the code from GitHub...'
+                    git branch: 'master', url: 'https://github.com/josuejero/selestino.git'
+                    echo 'Checked out code successfully!'
+                }
             }
         }
 
@@ -20,41 +22,45 @@ pipeline {
                     echo 'Cleaning the workspace...'
                     cleanWs()
                     echo 'Workspace cleaned!'
+                    sh '''
+                        echo "Creating virtual environment..."
+                        python3 -m venv env
+                        source env/bin/activate
+                        echo "Upgrading pip..."
+                        pip install --upgrade pip
+                        echo "Installing dependencies from selestino/requirements.txt..."
+                        pip install -r selestino/requirements.txt
+                        echo "Setup completed!"
+                    '''
                 }
-                sh '''
-                    echo "Creating virtual environment..."
-                    python3 -m venv env
-                    source env/bin/activate
-                    echo "Upgrading pip..."
-                    pip install --upgrade pip
-                    echo "Installing dependencies from selestino/requirements.txt..."
-                    pip install -r selestino/requirements.txt
-                    echo "Setup completed!"
-                '''
             }
         }
 
         stage('Migrate Database') {
             steps {
-                sh '''
-                    echo "Activating virtual environment..."
-                    source env/bin/activate
-                    echo "Running database migrations..."
-                    python manage.py migrate
-                    echo "Migrations completed!"
-                '''
+                script {
+                    sh '''
+                        echo "Activating virtual environment..."
+                        source env/bin/activate
+                        echo "Running database migrations..."
+                        python manage.py migrate
+                        echo "Migrations completed!"
+                    '''
+                }
             }
         }
 
         stage('Run Tests') {
             steps {
-                sh '''
-                    echo "Activating virtual environment..."
-                    source env/bin/activate
-                    echo "Running Django tests..."
-                    python manage.py test
-                    echo "Tests completed!"
-                '''
+                script {
+                    sh '''
+                        echo "Activating virtual environment..."
+                        source env/bin/activate
+                        echo "Running Django tests..."
+                        python manage.py test
+                        echo "Tests completed!"
+                    '''
+                }
             }
         }
 
@@ -76,8 +82,10 @@ pipeline {
 
     post {
         always {
-            echo 'Cleaning workspace after job completion...'
-            cleanWs()
+            script {
+                echo 'Cleaning workspace after job completion...'
+                cleanWs()
+            }
         }
         success {
             echo 'Pipeline succeeded!'
