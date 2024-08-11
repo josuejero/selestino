@@ -1,82 +1,89 @@
 pipeline {
     agent any
 
+    environment {
+        DATABASE_URL = "postgres://josuejero:peruano1@localhost:5432/selestino"
+    }
+
     stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checking out the code from GitHub...'
+                git branch: 'master', url: 'https://github.com/josuejero/selestino.git'
+                echo 'Checked out code successfully!'
+            }
+        }
+
         stage('Setup') {
             steps {
                 script {
-                    // Clean the workspace
+                    echo 'Cleaning the workspace...'
                     cleanWs()
+                    echo 'Workspace cleaned!'
                 }
-
-                // Debugging: Show the current directory and its contents
                 sh '''
-                    echo "Current Directory:"
-                    pwd
-                    echo "Contents of the Directory:"
-                    ls -la
-                '''
-
-                // Install dependencies in a virtual environment
-                sh '''
+                    echo "Creating virtual environment..."
                     python3 -m venv env
                     source env/bin/activate
-                    echo "Looking for requirements.txt:"
-                    ls -la
+                    echo "Upgrading pip..."
                     pip install --upgrade pip
+                    echo "Installing dependencies from selestino/requirements.txt..."
+                    pip install -r selestino/requirements.txt
+                    echo "Setup completed!"
                 '''
             }
         }
 
-        stage('Code Quality Check') {
+        stage('Migrate Database') {
             steps {
-                // Run a linter (e.g., flake8) to check code quality
                 sh '''
+                    echo "Activating virtual environment..."
                     source env/bin/activate
-                    pip install flake8
-                    flake8 selestino/ recipeservice/
+                    echo "Running database migrations..."
+                    python manage.py migrate
+                    echo "Migrations completed!"
                 '''
             }
         }
 
         stage('Run Tests') {
             steps {
-                // Run Django tests
                 sh '''
+                    echo "Activating virtual environment..."
                     source env/bin/activate
+                    echo "Running Django tests..."
                     python manage.py test
+                    echo "Tests completed!"
                 '''
             }
         }
 
         stage('Build') {
             steps {
-                // You can add steps here if you plan to build the project, such as Dockerizing the app
-                echo 'Build stage (optional)'
+                echo 'Build stage (currently no specific build actions configured)'
             }
         }
 
         stage('Deploy') {
             when {
-                branch 'main'
+                branch 'master'
             }
             steps {
-                // Deploy the application (e.g., push Docker image to a registry, deploy to AWS, etc.)
-                echo 'Deploy stage (optional)'
+                echo 'Deploy stage (currently no specific deploy actions configured)'
             }
         }
     }
 
     post {
         always {
-            // Clean up the workspace after the pipeline is complete
+            echo 'Cleaning workspace after job completion...'
             cleanWs()
         }
         success {
             echo 'Pipeline succeeded!'
         }
         failure {
-            echo 'Pipeline failed!'
+            echo 'Pipeline failed. Check the logs for details.'
         }
     }
 }
