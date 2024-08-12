@@ -1,0 +1,9 @@
+.idea/
+.vscode/
+__pycache__/
+logs/
+coverage/
+__pycache__/
+*.pyc
+*.log
+scripts/

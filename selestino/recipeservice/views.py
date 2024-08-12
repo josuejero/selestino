@@ -19,3 +19,4 @@ def add_recipe(request):
     else:
         form = RecipeForm()
     return render(request, 'recipeservice/recipe_form.html', {'form': form})
+
