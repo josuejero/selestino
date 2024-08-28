@@ -12,6 +12,8 @@ services:
       - .env
     depends_on:
       - db
+    networks:
+      - selestino-network  # Add the web service to the custom network
 
   db:
     image: postgres:13
@@ -21,6 +23,12 @@ services:
       POSTGRES_PASSWORD: peruano1
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+    networks:
+      - selestino-network  # Add the db service to the custom network
 
 volumes:
   postgres_data:
+
+networks:
+  selestino-network:  # Define a custom network for the services
+    driver: bridge
