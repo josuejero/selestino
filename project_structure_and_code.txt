@@ -37,7 +37,10 @@ selestino/
     project_structure_and_code.txt
     selestino/
         requirements.txt
+        Dockerfile
         .gitignore
+        .env
+        docker-compose.yml
         manage.py
 
         # Content of manage.py:
@@ -1048,12 +1051,6 @@ selestino/
                 main()
 
         coverage/
-    docker/
-        requirements.txt
-        Dockerfile
-        .env
-        default.conf
-        docker-compose.yml
     .git/
         ORIG_HEAD
         config
@@ -1160,6 +1157,8 @@ selestino/
             33/
                 40f360df9b93a42d4fbd246af4e6c3783796b1
                 b57848425585f123cae94049c37fb2391249a0
+            9d/
+                74467ac46d8ddf57564daf434ccd9c64988526
             9c/
                 22bfaa770daa6a81286206302b6275d632607f
             02/
@@ -1223,6 +1222,7 @@ selestino/
                 cee72e870aa265a47a71d2de804c65c721ca66
                 13001f8a650a46c96bfce5bba4a04e7c2dce70
             ee/
+                eace14b0c76783820fd883942c6b78a0327353
                 1b42c959fdcd77a98fac91863b10c55e0ee25d
             c9/
                 91e2550ae4f276c4269b3314b7fc127460ed87
@@ -1344,6 +1344,7 @@ selestino/
                 0b3207aeb800f8e76420253229bd1c5c135d0d
                 341ad6835c32a3e6b34d274e8b43e579bf4e8e
             86/
+                81651c623dfc9ca785f077dc5330e3e4b69aef
                 8447e3249386faccc505dffb05a5cf6f23aead
             72/
                 2a06f9623c906cfb21682678cf8bd8f60183b6
@@ -1379,6 +1380,7 @@ selestino/
                 c4aa93c518c39d74ea2b66ddb6bd11c95266f8
             5c/
                 752130bb287995bf669b9f7d4de77d887d65ea
+                b3d6810b19138a17b54cd04f61953f02d7e110
                 1e31b70fab9553c58eba6b4a6d1e9875eb50a7
             09/
                 ec9fad62d01b047942f1034f8f634b6cb39038
@@ -1415,6 +1417,8 @@ selestino/
                 330f2ef2ac2d5a4e1d37dabf96b5da72269be9
             6d/
                 36ca5699e7bfd09ce502fc948a199c9355aab8
+            06/
+                252762522951b30c65188792196868ca7ed302
             6c/
                 f50c464968f05df7ec81a1d7d9ba752488f6d8
             39/
@@ -1444,6 +1448,7 @@ selestino/
             64/
                 0285e41a86d4d405ad04d65ff21dd2484b928b
                 e1caad34d1ced8f681e3ba7722cfefde077fde
+                f4b78857191e8521458f5a3a5f37cf4d3469cf
                 8384df67a6ca5951190ec2315742edf34b8d41
                 1feb098a3a1ad92ee468cc9ab41506185c2e49
             90/
@@ -1469,6 +1474,7 @@ selestino/
                 f60e0a347f8c9ff7ac86db7a22045c40d1767b
             b1/
                 c3e406e07dee853e76ef86b6cf660645210690
+                eb9ffc1e4de5da4ab2500bb3c3a23adfa5a8ef
             dd/
                 e8d9e52337777524f67a1b3d677e8fcd436a38
                 407a06dc4becc6cf55bfa023e2b114d5013138
@@ -1491,6 +1497,8 @@ selestino/
             af/
                 662e3faa7f3e6108b9c272e964d42562faf29c
                 c144f5095a3fa7220f628188ab8331a5244376
+            b7/
+                7a757253cb6864b402171420e12e260df84194
             db/
                 dd2bb00d7efbb51c30d1959d254ee3ad408c00
                 2690adb6ba779339fa8968de07c805bc8512d0
@@ -1583,6 +1591,7 @@ selestino/
                 548b542f7df91c1c1d0e339068636437c8fdb8
             4a/
                 0b3bf009dc8aa9634681bd11b863924457c5e3
+                d3f361160642b7c1df665bae12d18e35528233
             24/
                 2b81a45f8540831ef7c40536f79530b6652c62
                 586d5e91eae70bf5dac3a0bc4518fd7f7fe047
@@ -1625,6 +1634,7 @@ selestino/
                 dbbb7a212113654ec2da3da4b7b1dad3a7e160
             40/
                 59b15544994e5e73e9b219c31627055dfa17bc
+                62f2b4b1c93d5d34b9bbdbddc01db3677839b6
             2e/
                 c2434077d2570a8fa4f4dc43de87d579e4eef1
                 0d3832c9299c3994f627cd64ed0341a5da7b14

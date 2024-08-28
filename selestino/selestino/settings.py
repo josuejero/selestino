@@ -80,8 +80,8 @@ DATABASES = {
         'NAME': 'selestino',
         'USER': 'josuejero',
         'PASSWORD': 'peruano1',
-        'HOST': 'localhost',
-        'PORT': '',
+        'HOST': 'selestino-db-1',
+        'PORT': '5432',
     }
 }
 
