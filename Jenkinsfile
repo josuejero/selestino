@@ -59,20 +59,6 @@ pipeline {
             }
         }
 
-        stage('Verify Docker Installation') {
-            steps {
-                script {
-                    try {
-                        sh 'sudo docker --version'
-                        echo "Docker is installed and accessible with sudo. [DEBUG-009]"
-                    } catch (Exception e) {
-                        echo "Docker is not accessible with sudo: ${e.message} [ERROR-109]"
-                        error("Failed at stage: Verify Docker Installation [ERROR-109]")
-                    }
-                }
-            }
-        }
-
         stage('Checkout Code') {
             steps {
                 echo "Starting code checkout from GitHub... [DEBUG-010]"
