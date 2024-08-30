@@ -15,6 +15,22 @@ pipeline {
     }
 
     stages {
+        stage('Check Environment Variables') {
+            steps {
+                script {
+                    echo "Checking environment variables... [DEBUG-000]"
+                    sh 'echo DOCKER_IMAGE: $DOCKER_IMAGE'
+                    sh 'echo REGISTRY_CREDENTIALS: ${REGISTRY_CREDENTIALS}'
+                    sh 'echo GITHUB_CREDENTIALS: ${GITHUB_CREDENTIALS}'
+                    sh 'echo GOOGLE_CLOUD_CREDENTIALS: ${GOOGLE_CLOUD_CREDENTIALS}'
+                    sh 'echo DB_NAME: $DB_NAME'
+                    sh 'echo DB_USER: $DB_USER'
+                    sh 'echo GOOGLE_PROJECT_ID: $GOOGLE_PROJECT_ID'
+                    sh 'echo GOOGLE_COMPUTE_ZONE: $GOOGLE_COMPUTE_ZONE'
+                }
+            }
+        }
+
         stage('Check Environment') {
             steps {
                 script {
@@ -22,7 +38,7 @@ pipeline {
                     sh 'echo "Current directory: $(pwd)" [DEBUG-002]'
                     sh 'echo "PATH: $PATH" [DEBUG-003]'
                     sh 'echo "Checking if Docker is in PATH: $(which docker || echo \'Docker not found in PATH\')" [DEBUG-004]'
-                    sh 'ls -la /var/run/docker.sock [DEBUG-005]'
+                    sh 'ls -la /var/run/docker.sock'
                     sh 'ls -la /usr/bin/docker || echo "/usr/bin/docker not found" [DEBUG-006]'
                     sh 'echo $SHELL [DEBUG-007]'
                 }
