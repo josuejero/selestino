@@ -79,7 +79,7 @@ pipeline {
                 echo "Starting Docker image build... [DEBUG-012]"
                 script {
                     try {
-                        dockerImage = docker.build("${DOCKER_IMAGE}:${env.BUILD_ID}")
+                        dockerImage = docker.build("${DOCKER_IMAGE}:${env.BUILD_ID}", "selestino/") // Updated path to Dockerfile
                         echo "Docker image built successfully: ${DOCKER_IMAGE}:${env.BUILD_ID} [DEBUG-013]"
                     } catch (Exception e) {
                         echo "Error during Docker image build: ${e.message} [ERROR-102]"
