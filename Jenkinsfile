@@ -18,10 +18,10 @@ pipeline {
         stage('Check Environment') {
             steps {
                 script {
-                    echo "User: $(whoami) [DEBUG-001]"
-                    echo "Current directory: $(pwd) [DEBUG-002]"
-                    echo "PATH: $PATH [DEBUG-003]"
-                    echo "Checking if Docker is in PATH: $(which docker || echo 'Docker not found in PATH') [DEBUG-004]"
+                    sh 'echo "User: $(whoami)" [DEBUG-001]'
+                    sh 'echo "Current directory: $(pwd)" [DEBUG-002]'
+                    sh 'echo "PATH: $PATH" [DEBUG-003]'
+                    sh 'echo "Checking if Docker is in PATH: $(which docker || echo \'Docker not found in PATH\')" [DEBUG-004]'
                     sh 'ls -la /var/run/docker.sock [DEBUG-005]'
                     sh 'ls -la /usr/bin/docker || echo "/usr/bin/docker not found" [DEBUG-006]'
                     sh 'echo $SHELL [DEBUG-007]'
