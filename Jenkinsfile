@@ -15,6 +15,24 @@ pipeline {
     }
 
     stages {
+        stage('Check Docker Installation') {
+            steps {
+                sh 'docker --version'
+            }
+        }
+        stage('Verify Docker Installation') {
+            steps {
+                script {
+                    try {
+                        sh 'sudo docker --version'
+                        echo "Docker is installed and accessible. [DEBUG-012]"
+                    } catch (Exception e) {
+                        echo "Docker is not installed or not accessible: ${e.message} [ERROR-107]"
+                        error("Failed at stage: Verify Docker Installation [ERROR-107]")
+                    }
+                }
+            }
+        }
         stage('Checkout Code') {
             steps {
                 echo "Starting code checkout from GitHub... [DEBUG-001]"
