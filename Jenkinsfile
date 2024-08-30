@@ -2,104 +2,115 @@ pipeline {
     agent any
 
     environment {
-        DATABASE_URL = "postgres://josuejero:peruano1@localhost:5432/selestino"
-        PATH = "/opt/homebrew/opt/postgresql@14/bin:${env.PATH}"
+        // Environment variables
+        DOCKER_IMAGE = "selestino-web"
+        REGISTRY_CREDENTIALS = credentials('docker')
+        GITHUB_CREDENTIALS = credentials('github')
+        GOOGLE_CLOUD_CREDENTIALS = credentials('GOOGLE_CLOUD_CREDENTIALS')
+        DB_NAME = "selestino"
+        DB_USER = "josuejero"
+        DB_PASSWORD = credentials('DB_PASSWORD')
+        GOOGLE_PROJECT_ID = "selestino-434015"
+        GOOGLE_COMPUTE_ZONE = "us-central1-a"
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
+                echo "Starting code checkout from GitHub... [DEBUG-001]"
                 script {
-                    echo 'Cleaning the workspace...'
-                    cleanWs()
-                    echo 'Workspace cleaned!'
-                    echo 'Checking out the code from GitHub...'
-                    git branch: 'master', url: 'https://github.com/josuejero/selestino.git'
-                    echo 'Checked out code successfully!'
+                    try {
+                        git branch: 'master', credentialsId: "${GITHUB_CREDENTIALS}", url: 'https://github.com/josuejero/selestino.git'
+                        echo "Code checkout completed successfully. [DEBUG-002]"
+                    } catch (Exception e) {
+                        echo "Error during code checkout: ${e.message} [ERROR-101]"
+                        error("Failed at stage: Checkout Code [ERROR-101]")
+                    }
                 }
             }
         }
 
-        stage('Setup') {
+        stage('Build Docker Image') {
             steps {
+                echo "Starting Docker image build... [DEBUG-003]"
                 script {
-                    sh '''
-                        echo "Creating virtual environment..."
-                        python3 -m venv env
-                        source env/bin/activate
-                        echo "Upgrading pip..."
-                        pip install --upgrade pip
-                        pwd
-                        echo "Installing dependencies from requirements.txt..."
-                        pip install -r requirements.txt
-                        echo "Setup completed!"
-                    '''
-                }
-            }
-        }
-
-        stage('Migrate Database') {
-            steps {
-                script {
-                    sh '''
-                        echo "Navigating to the Django project directory..."
-                        cd selestino
-                        echo "Activating virtual environment..."
-                        source ../env/bin/activate
-                        echo "Running database migrations..."
-                        python manage.py migrate
-                        echo "Migrations completed!"
-                    '''
+                    try {
+                        dockerImage = docker.build("${DOCKER_IMAGE}:${env.BUILD_ID}")
+                        echo "Docker image built successfully: ${DOCKER_IMAGE}:${env.BUILD_ID} [DEBUG-004]"
+                    } catch (Exception e) {
+                        echo "Error during Docker image build: ${e.message} [ERROR-102]"
+                        error("Failed at stage: Build Docker Image [ERROR-102]")
+                    }
                 }
             }
         }
 
         stage('Run Tests') {
             steps {
+                echo "Starting tests... [DEBUG-005]"
                 script {
-                    sh '''
-                        echo "Navigating to the Django project directory..."
-                        cd selestino
-                        echo "Activating virtual environment..."
-                        source ../env/bin/activate
-                        echo "Running Django tests..."
-                        python manage.py test
-                        echo "Tests completed!"
-                    '''
+                    try {
+                        dockerImage.inside('-v /var/run/docker.sock:/var/run/docker.sock') {
+                            sh 'pytest selestino/tests/'
+                        }
+                        echo "Tests completed successfully. [DEBUG-006]"
+                    } catch (Exception e) {
+                        echo "Error during testing: ${e.message} [ERROR-103]"
+                        error("Failed at stage: Run Tests [ERROR-103]")
+                    }
                 }
             }
         }
 
-        stage('Build') {
+        stage('Push Docker Image') {
             steps {
-                echo 'Build stage (currently no specific build actions configured)'
+                echo "Starting Docker image push to registry... [DEBUG-007]"
+                script {
+                    try {
+                        docker.withRegistry('', "${REGISTRY_CREDENTIALS}") {
+                            dockerImage.push("${env.BUILD_ID}")
+                            dockerImage.push('latest')
+                        }
+                        echo "Docker image pushed successfully: ${DOCKER_IMAGE}:${env.BUILD_ID} [DEBUG-008]"
+                    } catch (Exception e) {
+                        echo "Error during Docker image push: ${e.message} [ERROR-104]"
+                        error("Failed at stage: Push Docker Image [ERROR-104]")
+                    }
+                }
             }
         }
 
-        stage('Deploy') {
-            when {
-                branch 'master'
-            }
+        stage('Deploy to Google Cloud') {
             steps {
-                echo 'Deploy stage (currently no specific deploy actions configured)'
+                echo "Starting deployment to Google Cloud... [DEBUG-009]"
+                script {
+                    try {
+                        sh """
+                            gcloud auth activate-service-account --key-file=${GOOGLE_CLOUD_CREDENTIALS}
+                            gcloud config set project ${GOOGLE_PROJECT_ID}
+                            gcloud config set compute/zone ${GOOGLE_COMPUTE_ZONE}
+                            gcloud run deploy selestino-app \
+                                --image gcr.io/${GOOGLE_PROJECT_ID}/${DOCKER_IMAGE}:${env.BUILD_ID} \
+                                --platform managed \
+                                --region us-central1 \
+                                --allow-unauthenticated
+                        """
+                        echo "Deployment to Google Cloud completed successfully. [DEBUG-010]"
+                    } catch (Exception e) {
+                        echo "Error during deployment to Google Cloud: ${e.message} [ERROR-105]"
+                        error("Failed at stage: Deploy to Google Cloud [ERROR-105]")
+                    }
+                }
             }
         }
     }
 
     post {
-        always {
-            script {
-                node {
-                    echo 'Cleaning workspace after job completion...'
-                    cleanWs()
-                }
-            }
-        }
         success {
-            echo 'Pipeline succeeded!'
+            echo 'Build and Deployment were successful! [DEBUG-011]'
         }
         failure {
-            echo 'Pipeline failed. Check the logs for details.'
+            echo 'Build or Deployment failed. Please check the logs. [ERROR-106]'
         }
     }
 }

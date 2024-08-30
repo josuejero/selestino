@@ -66,6 +66,7 @@ selestino/
             list_files(project_root)
             print("Project structure and code have been written to 'project_structure_and_code.txt'")
 
+        wait-for-it.sh
         .gitignore
         .env
         docker-compose.yml
@@ -137,6 +138,7 @@ selestino/
             """
             
             from pathlib import Path
+            import os
             
             # Build paths inside the project like this: BASE_DIR / 'subdir'.
             BASE_DIR = Path(__file__).resolve().parent.parent
@@ -205,8 +207,8 @@ selestino/
                     'ENGINE': 'django.db.backends.postgresql',
                     'NAME': 'selestino',
                     'USER': 'josuejero',
-                    'PASSWORD': 'peruano1',
-                    'HOST': 'selestino-db-1',
+                    'PASSWORD': 'peruano1',  # Ensure this matches the password you successfully used
+                    'HOST': 'db',
                     'PORT': '5432',
                 }
             }
@@ -258,6 +260,8 @@ selestino/
             # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
             
             DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+            
+            print("DATABASES:", DATABASES)
 
             urls.py
 
@@ -1136,6 +1140,7 @@ selestino/
             68/
                 afd6d2592395509b829dc3f4cb7091116999af
                 8fe713674b914c519bef018aa47f7a8ba18d58
+                acc8ba082bc90b3f9b379ab4ea31117a795aec
             57/
                 760814489b55373e21cb3106dea98133e5b53e
                 0a5669374963a6ed9120aa784b8aaf15bceacc
@@ -1145,6 +1150,7 @@ selestino/
                 19285734251bd44ba90495f3edf1429417937f
                 0e04887145f2fb573b839a931c94aa57359c7e
                 c9366cc00b696a77eb1447e73088f83b1cb683
+                4d71e159520cf9542e71daf6cb0522e9ec9184
             9b/
                 008e4c145a5eafcd355b21fd6233448589a54b
                 a164080cc04d6c67b71d82d1adfe3ea68a8ea8
@@ -1266,7 +1272,9 @@ selestino/
                 243ddf1d1465975c53d030d8e8b5fddd04c44d
             f3/
                 ed798434baac41fa8eacbfa48eded2308812c4
+                8450b6b3a441f4da689b71750a921ae4d0313d
             eb/
+                3c5924f1ea6c86a19f84b71e22a3728ef23a89
                 c84b04d0566222400194de8f34a1e5ef6ea3ba
             c7/
                 cee72e870aa265a47a71d2de804c65c721ca66
@@ -1467,6 +1475,8 @@ selestino/
                 69c6f27bfdec0b246d21311f50951e5ed6c356
                 0d4c1246cbfe2b5d50fde0a3ec59dec24b00c5
                 255ff377719751d344db5ffb76e5979bac077c
+            5e/
+                564b6a13c71ffa842c561015f8f4f7ad19940c
             5b/
                 885a1486f32d8eae919a45359eb3ec680da6c7
             08/
@@ -1522,6 +1532,7 @@ selestino/
                 6eb0384cfaad37801b96e9cf9f5cfd1b2c1046
                 922a1df5b3c8604a1f8ad3e0aa1b7623340b7e
             ba/
+                dd9bbe5c9bc4276c76c60ba13f470a47a2b647
                 8cf55df395cf7c61ae06830647034b2477f7d1
             a0/
                 70678a8d3daee8a93f274b6ac646a4326ee4f6
@@ -1587,12 +1598,15 @@ selestino/
             e6/
                 d0fe2f94f09852620d58d4db90c08c4aa72f1a
             f9/
+                ea46922c14534b630c79fbab54b503084d266b
                 3e3a1a1525fb5b91020da86e44810c87a2d7bc
                 76fdfc57b827b4563ae7527439d723301cf775
             f0/
+                33899b53e77900be9bae60849d29a1b8bfd653
                 43bd6a52ff3034badce4ea06ec85d08b1bac66
             f7/
                 ff128cf47fe3546d1195bad6dae0f56c8f1dc2
+                ba1627de2e3e9a73a51036925a1eeb2ba81245
             e8/
                 cd7e7e8c16d8b6e7287917afc38cfddca9e73c
             fa/
@@ -1653,6 +1667,8 @@ selestino/
                 721eaa4dae63514987494ec6023078461a8bd3
                 1e15de29508c805a4b0545c558d549d0678fa3
                 548b542f7df91c1c1d0e339068636437c8fdb8
+            1e/
+                ae3e79386ab958e4a1d4a44ce03b8d150bb726
             4a/
                 0b3bf009dc8aa9634681bd11b863924457c5e3
                 d3f361160642b7c1df665bae12d18e35528233
