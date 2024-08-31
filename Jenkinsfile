@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        PATH = "/usr/bin:$PATH"
+        PATH = "/usr/local/bin:$PATH"
         DB_NAME = "selestino"
         DB_USER = "josuejero"
         DB_PASSWORD = "peruano1"
@@ -34,6 +34,18 @@ pipeline {
                     sh 'echo "User: $(whoami)" [DEBUG-001]'
                     sh 'echo "Current directory: $(pwd)" [DEBUG-002]'
                     sh 'echo "PATH: $PATH" [DEBUG-003]'
+                }
+            }
+        }
+
+        stage('Install Docker Compose') {
+            steps {
+                script {
+                    echo "Installing Docker Compose... [DEBUG-004]"
+                    sh '''
+                        curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                        chmod +x /usr/local/bin/docker-compose
+                    '''
                 }
             }
         }
