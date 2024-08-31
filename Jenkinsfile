@@ -95,6 +95,7 @@ pipeline {
                             sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;" 2>/dev/null || echo "Database $DB_NAME already exists"
                             sudo -u postgres psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';" 2>/dev/null || echo "User $DB_USER already exists"
                             sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
+                            sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON SCHEMA public TO $DB_USER;"
                         '''
                         echo "PostgreSQL service started, and database setup verified. [DEBUG-013]"
                     } catch (Exception e) {
@@ -129,7 +130,7 @@ pipeline {
                     try {
                         sh '''
                             . venv/bin/activate
-                            python selestino/manage.py migrate
+                            python manage.py migrate
                         '''
                         echo "Migrations applied successfully. [DEBUG-020]"
                     } catch (Exception e) {
