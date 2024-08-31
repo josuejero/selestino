@@ -46,8 +46,8 @@ pipeline {
                         if ! command -v python3 &> /dev/null
                         then
                             echo "Python 3 not found, installing Python 3... [DEBUG-005]"
-                            apt-get update -y
-                            apt-get install -y python3 python3-pip
+                            sudo apt-get update -y
+                            sudo apt-get install -y python3 python3-pip
                         else
                             echo "Python 3 is already installed. [DEBUG-006]"
                         fi
@@ -60,8 +60,8 @@ pipeline {
             steps {
                 script {
                     echo "Installing Python dependencies, including pytest... [DEBUG-007]"
-                    sh 'pip3 install --upgrade pip'
-                    sh 'pip3 install pytest'
+                    sh 'sudo pip3 install --upgrade pip'
+                    sh 'sudo pip3 install pytest'
                 }
             }
         }
