@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        PATH = "/home/jenkins/bin:$PATH"
+        PATH = "/usr/local/bin:$PATH"
         DB_NAME = "selestino"
         DB_USER = "josuejero"
         DB_PASSWORD = "peruano1"
@@ -43,9 +43,8 @@ pipeline {
                 script {
                     echo "Installing Docker Compose... [DEBUG-004]"
                     sh '''
-                        mkdir -p /home/jenkins/bin
-                        curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /home/jenkins/bin/docker-compose
-                        chmod +x /home/jenkins/bin/docker-compose
+                        sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                        sudo chmod +x /usr/local/bin/docker-compose
                     '''
                 }
             }
