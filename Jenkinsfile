@@ -53,7 +53,7 @@ pipeline {
                         fi
 
                         python3 -m venv venv
-                        source venv/bin/activate
+                        . venv/bin/activate
                     '''
                 }
             }
@@ -64,7 +64,7 @@ pipeline {
                 script {
                     echo "Installing Python dependencies, including pytest... [DEBUG-007]"
                     sh '''
-                        source venv/bin/activate
+                        . venv/bin/activate
                         pip install --upgrade pip
                         pip install pytest
                     '''
@@ -93,7 +93,7 @@ pipeline {
                     echo "Running tests... [DEBUG-016]"
                     try {
                         sh '''
-                            source venv/bin/activate
+                            . venv/bin/activate
                             pytest tests/
                         '''
                     } catch (Exception e) {
