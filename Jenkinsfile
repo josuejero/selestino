@@ -56,8 +56,23 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-                    echo "Building Docker images... [DEBUG-012]"
-                    sh 'docker-compose build'
+                    echo "Checking for docker-compose.yml file and building Docker images... [DEBUG-012]"
+                    try {
+                        if (fileExists('docker-compose.yml')) {
+                            echo "docker-compose.yml found in the current directory. Building Docker images... [DEBUG-013]"
+                            sh 'docker-compose build'
+                        } else if (fileExists('selestino/docker-compose.yml')) {
+                            echo "docker-compose.yml found in selestino directory. Changing directory and building Docker images... [DEBUG-014]"
+                            dir('selestino') {
+                                sh 'docker-compose build'
+                            }
+                        } else {
+                            error("docker-compose.yml not found in either current or selestino directory [ERROR-104]")
+                        }
+                    } catch (Exception e) {
+                        echo "Error during Docker image build: ${e.message} [ERROR-103]"
+                        error("Failed at stage: Build Docker Images [ERROR-103]")
+                    }
                 }
             }
         }
@@ -65,22 +80,22 @@ pipeline {
         stage('Run Tests') {
             steps {
                 script {
-                    echo "Checking for docker-compose.yml file and running tests... [DEBUG-013]"
+                    echo "Checking for docker-compose.yml file and running tests... [DEBUG-015]"
                     try {
                         if (fileExists('docker-compose.yml')) {
-                            echo "docker-compose.yml found in the current directory. Running tests... [DEBUG-014]"
+                            echo "docker-compose.yml found in the current directory. Running tests... [DEBUG-016]"
                             sh 'docker-compose run --rm web pytest tests/'
                         } else if (fileExists('selestino/docker-compose.yml')) {
-                            echo "docker-compose.yml found in selestino directory. Changing directory and running tests... [DEBUG-015]"
+                            echo "docker-compose.yml found in selestino directory. Changing directory and running tests... [DEBUG-017]"
                             dir('selestino') {
                                 sh 'docker-compose run --rm web pytest tests/'
                             }
                         } else {
-                            error("docker-compose.yml not found in either current or selestino directory [ERROR-103]")
+                            error("docker-compose.yml not found in either current or selestino directory [ERROR-105]")
                         }
                     } catch (Exception e) {
-                        echo "Error during testing: ${e.message} [ERROR-102]"
-                        error("Failed at stage: Run Tests [ERROR-102]")
+                        echo "Error during testing: ${e.message} [ERROR-104]"
+                        error("Failed at stage: Run Tests [ERROR-104]")
                     }
                 }
             }
