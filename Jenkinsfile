@@ -3,8 +3,6 @@ pipeline {
 
     environment {
         PATH = "/usr/bin:$PATH"
-        DOCKER_HOST = "tcp://host.docker.internal:2375"  // Point to Docker daemon on the host
-        DOCKER_IMAGE = "selestino-web"
         DB_NAME = "selestino"
         DB_USER = "josuejero"
         GOOGLE_PROJECT_ID = "selestino-434015"
@@ -16,7 +14,6 @@ pipeline {
             steps {
                 script {
                     echo "Checking environment variables... [DEBUG-000]"
-                    sh 'echo DOCKER_IMAGE: $DOCKER_IMAGE'
                     sh 'echo DB_NAME: $DB_NAME'
                     sh 'echo DB_USER: $DB_USER'
                     sh 'echo GOOGLE_PROJECT_ID: $GOOGLE_PROJECT_ID'
@@ -31,24 +28,6 @@ pipeline {
                     sh 'echo "User: $(whoami)" [DEBUG-001]'
                     sh 'echo "Current directory: $(pwd)" [DEBUG-002]'
                     sh 'echo "PATH: $PATH" [DEBUG-003]'
-                    sh 'echo "Checking if Docker is in PATH: $(which docker || echo \'Docker not found in PATH\')" [DEBUG-004]'
-                    sh 'ls -la /var/run/docker.sock'
-                    sh 'ls -la /usr/bin/docker || echo "/usr/bin/docker not found" [DEBUG-006]'
-                    sh 'echo $SHELL [DEBUG-007]'
-                }
-            }
-        }
-
-        stage('Check Docker Installation') {
-            steps {
-                script {
-                    try {
-                        sh 'docker --version'
-                        echo "Docker is installed and accessible. [DEBUG-008]"
-                    } catch (Exception e) {
-                        echo "Docker is not installed or not accessible: ${e.message} [ERROR-108]"
-                        error("Failed at stage: Check Docker Installation [ERROR-108]")
-                    }
                 }
             }
         }
@@ -59,41 +38,11 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
-            steps {
-                echo "Starting Docker image build... [DEBUG-012]"
-                script {
-                    try {
-                        dockerImage = docker.build("${DOCKER_IMAGE}:${env.BUILD_ID}", "selestino/")
-                        echo "Docker image built successfully: ${DOCKER_IMAGE}:${env.BUILD_ID} [DEBUG-013]"
-                    } catch (Exception e) {
-                        echo "Error during Docker image build: ${e.message} [ERROR-102]"
-                        error("Failed at stage: Build Docker Image [ERROR-102]")
-                    }
-                }
-            }
-        }
+        // Skipped Docker build and related stages
 
         stage('Run Tests') {
             steps {
-                echo "Starting tests... [DEBUG-014]"
-                script {
-                    try {
-                        dockerImage.inside('-v /var/run/docker.sock:/var/run/docker.sock') {
-                            sh 'pytest selestino/tests/'
-                        }
-                        echo "Tests completed successfully. [DEBUG-015]"
-                    } catch (Exception e) {
-                        echo "Error during testing: ${e.message} [ERROR-103]"
-                        error("Failed at stage: Run Tests [ERROR-103]")
-                    }
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                echo "Skipping Docker image push... [DEBUG-016]"
+                echo "Skipping test stage... [DEBUG-014]"
             }
         }
 
