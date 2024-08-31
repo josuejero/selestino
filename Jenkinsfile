@@ -48,10 +48,7 @@ pipeline {
                             echo "Python 3 not found, installing Python 3... [DEBUG-005]"
                             sudo apt-get update -y
                             sudo apt-get install -y python3 python3-pip python3-venv
-                        else
-                            echo "Python 3 is already installed. [DEBUG-006]"
                         fi
-
                         python3 -m venv venv
                         . venv/bin/activate
                     '''
@@ -62,11 +59,11 @@ pipeline {
         stage('Install Python Dependencies') {
             steps {
                 script {
-                    echo "Installing Python dependencies, including pytest... [DEBUG-007]"
+                    echo "Installing Python dependencies from requirements.txt... [DEBUG-007]"
                     sh '''
                         . venv/bin/activate
                         pip install --upgrade pip
-                        pip install pytest
+                        pip install -r requirements.txt
                     '''
                 }
             }
@@ -86,6 +83,7 @@ pipeline {
                 }
             }
         }
+
         stage('Run Tests') {
             steps {
                 script {
