@@ -38,17 +38,18 @@ pipeline {
             }
         }
 
-        stage('Check for pip and Install if Missing') {
+        stage('Install Python 3') {
             steps {
                 script {
+                    echo "Checking for Python 3 and installing if necessary... [DEBUG-004]"
                     sh '''
-                        if ! command -v pip3 &> /dev/null
+                        if ! command -v python3 &> /dev/null
                         then
-                            echo "pip3 not found, installing pip... [DEBUG-004]"
-                            curl -O https://bootstrap.pypa.io/get-pip.py
-                            python3 get-pip.py --user
+                            echo "Python 3 not found, installing Python 3... [DEBUG-005]"
+                            apt-get update -y
+                            apt-get install -y python3 python3-pip
                         else
-                            echo "pip3 found, skipping installation... [DEBUG-005]"
+                            echo "Python 3 is already installed. [DEBUG-006]"
                         fi
                     '''
                 }
@@ -58,7 +59,7 @@ pipeline {
         stage('Install Python Dependencies') {
             steps {
                 script {
-                    echo "Installing Python dependencies, including pytest... [DEBUG-005]"
+                    echo "Installing Python dependencies, including pytest... [DEBUG-007]"
                     sh 'pip3 install --upgrade pip'
                     sh 'pip3 install pytest'
                 }
