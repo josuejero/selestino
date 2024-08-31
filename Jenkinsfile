@@ -38,7 +38,15 @@ pipeline {
             }
         }
 
-        // Docker-related stages removed
+        stage('Install Python Dependencies') {
+            steps {
+                script {
+                    echo "Installing Python dependencies, including pytest... [DEBUG-005]"
+                    sh 'pip install --upgrade pip'
+                    sh 'pip install pytest'
+                }
+            }
+        }
 
         stage('Checkout Code') {
             steps {
@@ -55,7 +63,6 @@ pipeline {
             }
         }
 
-        // Run Tests Stage
         stage('Run Tests') {
             steps {
                 script {
@@ -70,7 +77,6 @@ pipeline {
             }
         }
 
-        // Deployment Stage
         stage('Deploy to Google Cloud') {
             steps {
                 script {
