@@ -38,12 +38,24 @@ pipeline {
             }
         }
 
+        stage('Install pip') {
+            steps {
+                script {
+                    echo "Installing pip... [DEBUG-004]"
+                    sh '''
+                        apt-get update -y
+                        apt-get install -y python3-pip
+                    '''
+                }
+            }
+        }
+
         stage('Install Python Dependencies') {
             steps {
                 script {
                     echo "Installing Python dependencies, including pytest... [DEBUG-005]"
-                    sh 'pip install --upgrade pip'
-                    sh 'pip install pytest'
+                    sh 'pip3 install --upgrade pip'
+                    sh 'pip3 install pytest'
                 }
             }
         }
