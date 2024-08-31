@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+        PATH = "/usr/bin:$PATH"
         // Environment variables
         DOCKER_IMAGE = "selestino-web"
         // Commented out credentials for testing purposes
@@ -95,7 +96,7 @@ pipeline {
                         echo "Tests completed successfully. [DEBUG-015]"
                     } catch (Exception e) {
                         echo "Error during testing: ${e.message} [ERROR-103]"
-                        error("Failed at stage: Run Tests [ERROR-103]")
+                        error("Failed at stage: Run Tests [ERROR-103]"
                     }
                 }
             }
