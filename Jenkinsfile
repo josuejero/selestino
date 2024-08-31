@@ -38,19 +38,22 @@ pipeline {
             }
         }
 
-        stage('Install Python 3') {
+        stage('Install Python 3 and Setup Virtual Environment') {
             steps {
                 script {
-                    echo "Checking for Python 3 and installing if necessary... [DEBUG-004]"
+                    echo "Checking for Python 3 and setting up virtual environment if necessary... [DEBUG-004]"
                     sh '''
                         if ! command -v python3 &> /dev/null
                         then
                             echo "Python 3 not found, installing Python 3... [DEBUG-005]"
                             sudo apt-get update -y
-                            sudo apt-get install -y python3 python3-pip
+                            sudo apt-get install -y python3 python3-pip python3-venv
                         else
                             echo "Python 3 is already installed. [DEBUG-006]"
                         fi
+
+                        python3 -m venv venv
+                        source venv/bin/activate
                     '''
                 }
             }
@@ -60,8 +63,11 @@ pipeline {
             steps {
                 script {
                     echo "Installing Python dependencies, including pytest... [DEBUG-007]"
-                    sh 'sudo pip3 install --upgrade pip'
-                    sh 'sudo pip3 install pytest'
+                    sh '''
+                        source venv/bin/activate
+                        pip install --upgrade pip
+                        pip install pytest
+                    '''
                 }
             }
         }
@@ -86,7 +92,10 @@ pipeline {
                 script {
                     echo "Running tests... [DEBUG-016]"
                     try {
-                        sh 'pytest tests/'
+                        sh '''
+                            source venv/bin/activate
+                            pytest tests/
+                        '''
                     } catch (Exception e) {
                         echo "Error during testing: ${e.message} [ERROR-104]"
                         error("Failed at stage: Run Tests [ERROR-104]")
