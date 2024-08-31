@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        PATH = "/usr/local/bin:$PATH"
+        PATH = "/home/jenkins/bin:$PATH"
         DB_NAME = "selestino"
         DB_USER = "josuejero"
         DB_PASSWORD = "peruano1"
@@ -43,8 +43,9 @@ pipeline {
                 script {
                     echo "Installing Docker Compose... [DEBUG-004]"
                     sh '''
-                        curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-                        chmod +x /usr/local/bin/docker-compose
+                        mkdir -p /home/jenkins/bin
+                        curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /home/jenkins/bin/docker-compose
+                        chmod +x /home/jenkins/bin/docker-compose
                     '''
                 }
             }
@@ -111,11 +112,11 @@ pipeline {
                                 sh 'docker-compose run --rm web pytest tests/'
                             }
                         } else {
-                            error("docker-compose.yml not found in either current or selestino directory [ERROR-105]")
+                            error("docker-compose.yml not found in either current or selestino directory [ERROR-105]"
                         }
                     } catch (Exception e) {
                         echo "Error during testing: ${e.message} [ERROR-104]"
-                        error("Failed at stage: Run Tests [ERROR-104]")
+                        error("Failed at stage: Run Tests [ERROR-104]"
                     }
                 }
             }
