@@ -112,11 +112,11 @@ pipeline {
                                 sh 'docker-compose run --rm web pytest tests/'
                             }
                         } else {
-                            error("docker-compose.yml not found in either current or selestino directory [ERROR-105]"
+                            error("docker-compose.yml not found in either current or selestino directory [ERROR-105]")
                         }
                     } catch (Exception e) {
                         echo "Error during testing: ${e.message} [ERROR-104]"
-                        error("Failed at stage: Run Tests [ERROR-104]"
+                        error("Failed at stage: Run Tests [ERROR-104]")
                     }
                 }
             }
