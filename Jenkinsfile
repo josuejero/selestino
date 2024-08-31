@@ -38,13 +38,18 @@ pipeline {
             }
         }
 
-        stage('Install pip') {
+        stage('Check for pip and Install if Missing') {
             steps {
                 script {
-                    echo "Installing pip... [DEBUG-004]"
                     sh '''
-                        apt-get update -y
-                        apt-get install -y python3-pip
+                        if ! command -v pip3 &> /dev/null
+                        then
+                            echo "pip3 not found, installing pip... [DEBUG-004]"
+                            curl -O https://bootstrap.pypa.io/get-pip.py
+                            python3 get-pip.py --user
+                        else
+                            echo "pip3 found, skipping installation... [DEBUG-005]"
+                        fi
                     '''
                 }
             }
