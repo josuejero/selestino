@@ -86,16 +86,28 @@ pipeline {
                 }
             }
         }
-
         stage('Run Tests') {
             steps {
                 script {
                     echo "Running tests... [DEBUG-016]"
                     try {
-                        sh '''
-                            . venv/bin/activate
-                            pytest tests/
-                        '''
+                        if (fileExists('tests')) {
+                            echo "tests directory found in the current directory. [DEBUG-017]"
+                            sh '''
+                                . venv/bin/activate
+                                pytest tests/
+                            '''
+                        } else if (fileExists('selestino/tests')) {
+                            echo "tests directory found in the selestino directory. Changing directory... [DEBUG-018]"
+                            dir('selestino') {
+                                sh '''
+                                    . ../venv/bin/activate
+                                    pytest tests/
+                                '''
+                            }
+                        } else {
+                            error("tests directory not found in either the current or selestino directory [ERROR-105]")
+                        }
                     } catch (Exception e) {
                         echo "Error during testing: ${e.message} [ERROR-104]"
                         error("Failed at stage: Run Tests [ERROR-104]")
