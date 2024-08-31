@@ -3,15 +3,10 @@ pipeline {
 
     environment {
         PATH = "/usr/bin:$PATH"
-        // Environment variables
+        DOCKER_HOST = "tcp://host.docker.internal:2375"  // Point to Docker daemon on the host
         DOCKER_IMAGE = "selestino-web"
-        // Commented out credentials for testing purposes
-        // REGISTRY_CREDENTIALS = credentials('docker')
-        // GITHUB_CREDENTIALS = credentials('github')
-        // GOOGLE_CLOUD_CREDENTIALS = credentials('GOOGLE_CLOUD_CREDENTIALS')
         DB_NAME = "selestino"
         DB_USER = "josuejero"
-        // DB_PASSWORD = credentials('DB_PASSWORD')
         GOOGLE_PROJECT_ID = "selestino-434015"
         GOOGLE_COMPUTE_ZONE = "us-central1-a"
     }
@@ -22,13 +17,8 @@ pipeline {
                 script {
                     echo "Checking environment variables... [DEBUG-000]"
                     sh 'echo DOCKER_IMAGE: $DOCKER_IMAGE'
-                    // Echo placeholders for credentials
-                    echo "REGISTRY_CREDENTIALS: ****"
-                    echo "GITHUB_CREDENTIALS: ****"
-                    echo "GOOGLE_CLOUD_CREDENTIALS: ****"
                     sh 'echo DB_NAME: $DB_NAME'
                     sh 'echo DB_USER: $DB_USER'
-                    echo "DB_PASSWORD: ****"
                     sh 'echo GOOGLE_PROJECT_ID: $GOOGLE_PROJECT_ID'
                     sh 'echo GOOGLE_COMPUTE_ZONE: $GOOGLE_COMPUTE_ZONE'
                 }
@@ -66,7 +56,6 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 echo "Skipping code checkout... [DEBUG-010]"
-                // Skipping actual Git checkout since credentials are not being used
             }
         }
 
@@ -105,14 +94,12 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 echo "Skipping Docker image push... [DEBUG-016]"
-                // Skipping Docker push since registry credentials are not being used
             }
         }
 
         stage('Deploy to Google Cloud') {
             steps {
                 echo "Skipping deployment to Google Cloud... [DEBUG-018]"
-                // Skipping Google Cloud deployment since credentials are not being used
             }
         }
     }
