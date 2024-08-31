@@ -96,6 +96,7 @@ pipeline {
                             sudo -u postgres psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';" 2>/dev/null || echo "User $DB_USER already exists"
                             sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
                             sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON SCHEMA public TO $DB_USER;"
+                            sudo -u postgres psql -c "ALTER ROLE $DB_USER IN DATABASE $DB_NAME SET search_path = public;"
                         '''
                         echo "PostgreSQL service started, and database setup verified. [DEBUG-013]"
                     } catch (Exception e) {
