@@ -7,6 +7,7 @@ pipeline {
         DB_USER = "josuejero"
         GOOGLE_PROJECT_ID = "selestino-434015"
         GOOGLE_COMPUTE_ZONE = "us-central1-a"
+        GITHUB_CREDENTIALS = credentials('GITHUB_CREDENTIALS_ID')  // Add GitHub credentials to the environment
     }
 
     stages {
@@ -18,6 +19,7 @@ pipeline {
                     sh 'echo DB_USER: $DB_USER'
                     sh 'echo GOOGLE_PROJECT_ID: $GOOGLE_PROJECT_ID'
                     sh 'echo GOOGLE_COMPUTE_ZONE: $GOOGLE_COMPUTE_ZONE'
+                    sh 'echo GITHUB_CREDENTIALS: ****'  // Masked echo of the GitHub credentials
                 }
             }
         }
@@ -34,7 +36,16 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                echo "Skipping code checkout... [DEBUG-010]"
+                script {
+                    echo "Starting code checkout... [DEBUG-010]"
+                    try {
+                        git branch: 'master', credentialsId: "${GITHUB_CREDENTIALS}", url: 'https://github.com/josuejero/selestino.git'
+                        echo "Code checkout completed successfully. [DEBUG-011]"
+                    } catch (Exception e) {
+                        echo "Error during code checkout: ${e.message} [ERROR-101]"
+                        error("Failed at stage: Checkout Code [ERROR-101]")
+                    }
+                }
             }
         }
 
