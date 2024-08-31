@@ -4,12 +4,13 @@ pipeline {
     environment {
         // Environment variables
         DOCKER_IMAGE = "selestino-web"
-        REGISTRY_CREDENTIALS = credentials('docker')
-        GITHUB_CREDENTIALS = credentials('github')
-        GOOGLE_CLOUD_CREDENTIALS = credentials('GOOGLE_CLOUD_CREDENTIALS')
+        // Commented out credentials for testing purposes
+        // REGISTRY_CREDENTIALS = credentials('docker')
+        // GITHUB_CREDENTIALS = credentials('github')
+        // GOOGLE_CLOUD_CREDENTIALS = credentials('GOOGLE_CLOUD_CREDENTIALS')
         DB_NAME = "selestino"
         DB_USER = "josuejero"
-        DB_PASSWORD = credentials('DB_PASSWORD')
+        // DB_PASSWORD = credentials('DB_PASSWORD')
         GOOGLE_PROJECT_ID = "selestino-434015"
         GOOGLE_COMPUTE_ZONE = "us-central1-a"
     }
@@ -20,11 +21,13 @@ pipeline {
                 script {
                     echo "Checking environment variables... [DEBUG-000]"
                     sh 'echo DOCKER_IMAGE: $DOCKER_IMAGE'
-                    sh 'echo REGISTRY_CREDENTIALS: ${REGISTRY_CREDENTIALS}'
-                    sh 'echo GITHUB_CREDENTIALS: ${GITHUB_CREDENTIALS}'
-                    sh 'echo GOOGLE_CLOUD_CREDENTIALS: ${GOOGLE_CLOUD_CREDENTIALS}'
+                    // Echo placeholders for credentials
+                    echo "REGISTRY_CREDENTIALS: ****"
+                    echo "GITHUB_CREDENTIALS: ****"
+                    echo "GOOGLE_CLOUD_CREDENTIALS: ****"
                     sh 'echo DB_NAME: $DB_NAME'
                     sh 'echo DB_USER: $DB_USER'
+                    echo "DB_PASSWORD: ****"
                     sh 'echo GOOGLE_PROJECT_ID: $GOOGLE_PROJECT_ID'
                     sh 'echo GOOGLE_COMPUTE_ZONE: $GOOGLE_COMPUTE_ZONE'
                 }
@@ -61,16 +64,8 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                echo "Starting code checkout from GitHub... [DEBUG-010]"
-                script {
-                    try {
-                        git branch: 'master', credentialsId: "${GITHUB_CREDENTIALS}", url: 'https://github.com/josuejero/selestino.git'
-                        echo "Code checkout completed successfully. [DEBUG-011]"
-                    } catch (Exception e) {
-                        echo "Error during code checkout: ${e.message} [ERROR-101]"
-                        error("Failed at stage: Checkout Code [ERROR-101]")
-                    }
-                }
+                echo "Skipping code checkout... [DEBUG-010]"
+                // Skipping actual Git checkout since credentials are not being used
             }
         }
 
@@ -79,7 +74,7 @@ pipeline {
                 echo "Starting Docker image build... [DEBUG-012]"
                 script {
                     try {
-                        dockerImage = docker.build("${DOCKER_IMAGE}:${env.BUILD_ID}", "selestino/") // Updated path to Dockerfile
+                        dockerImage = docker.build("${DOCKER_IMAGE}:${env.BUILD_ID}", "selestino/")
                         echo "Docker image built successfully: ${DOCKER_IMAGE}:${env.BUILD_ID} [DEBUG-013]"
                     } catch (Exception e) {
                         echo "Error during Docker image build: ${e.message} [ERROR-102]"
@@ -108,53 +103,25 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                echo "Starting Docker image push to registry... [DEBUG-016]"
-                script {
-                    try {
-                        docker.withRegistry('', "${REGISTRY_CREDENTIALS}") {
-                            dockerImage.push("${env.BUILD_ID}")
-                            dockerImage.push('latest')
-                        }
-                        echo "Docker image pushed successfully: ${DOCKER_IMAGE}:${env.BUILD_ID} [DEBUG-017]"
-                    } catch (Exception e) {
-                        echo "Error during Docker image push: ${e.message} [ERROR-104]"
-                        error("Failed at stage: Push Docker Image [ERROR-104]")
-                    }
-                }
+                echo "Skipping Docker image push... [DEBUG-016]"
+                // Skipping Docker push since registry credentials are not being used
             }
         }
 
         stage('Deploy to Google Cloud') {
             steps {
-                echo "Starting deployment to Google Cloud... [DEBUG-018]"
-                script {
-                    try {
-                        sh """
-                            gcloud auth activate-service-account --key-file=${GOOGLE_CLOUD_CREDENTIALS}
-                            gcloud config set project ${GOOGLE_PROJECT_ID}
-                            gcloud config set compute/zone ${GOOGLE_COMPUTE_ZONE}
-                            gcloud run deploy selestino-app \
-                                --image gcr.io/${GOOGLE_PROJECT_ID}/${DOCKER_IMAGE}:${env.BUILD_ID} \
-                                --platform managed \
-                                --region us-central1 \
-                                --allow-unauthenticated
-                        """
-                        echo "Deployment to Google Cloud completed successfully. [DEBUG-019]"
-                    } catch (Exception e) {
-                        echo "Error during deployment to Google Cloud: ${e.message} [ERROR-105]"
-                        error("Failed at stage: Deploy to Google Cloud [ERROR-105]")
-                    }
-                }
+                echo "Skipping deployment to Google Cloud... [DEBUG-018]"
+                // Skipping Google Cloud deployment since credentials are not being used
             }
         }
     }
 
     post {
         success {
-            echo 'Build and Deployment were successful! [DEBUG-020]'
+            echo 'Build was successful! [DEBUG-020]'
         }
         failure {
-            echo 'Build or Deployment failed. Please check the logs. [ERROR-106]'
+            echo 'Build failed. Please check the logs. [ERROR-106]'
         }
     }
 }
