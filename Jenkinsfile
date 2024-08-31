@@ -96,7 +96,7 @@ pipeline {
                         echo "Tests completed successfully. [DEBUG-015]"
                     } catch (Exception e) {
                         echo "Error during testing: ${e.message} [ERROR-103]"
-                        error("Failed at stage: Run Tests [ERROR-103]"
+                        error("Failed at stage: Run Tests [ERROR-103]")
                     }
                 }
             }
