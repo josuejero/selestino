@@ -130,7 +130,7 @@ pipeline {
                     try {
                         sh '''
                             . venv/bin/activate
-                            python manage.py migrate
+                            python selestino/manage.py migrate
                         '''
                         echo "Migrations applied successfully. [DEBUG-020]"
                     } catch (Exception e) {
