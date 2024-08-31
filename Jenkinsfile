@@ -122,6 +122,24 @@ pipeline {
             }
         }
 
+        stage('Apply Migrations') {
+            steps {
+                script {
+                    echo "Applying database migrations... [DEBUG-019]"
+                    try {
+                        sh '''
+                            . venv/bin/activate
+                            python manage.py migrate
+                        '''
+                        echo "Migrations applied successfully. [DEBUG-020]"
+                    } catch (Exception e) {
+                        echo "Error applying migrations: ${e.message} [ERROR-107]"
+                        error("Failed at stage: Apply Migrations [ERROR-107]")
+                    }
+                }
+            }
+        }
+
         stage('Run Tests') {
             steps {
                 script {
