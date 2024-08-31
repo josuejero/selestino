@@ -86,7 +86,7 @@ DATABASES = {
         'NAME': 'selestino',
         'USER': 'josuejero',
         'PASSWORD': 'peruano1',
-        'HOST': 'db',  # For accessing host database
+        'HOST': 'localhost',  # For accessing host database
         'PORT': '5432',
     }
 }

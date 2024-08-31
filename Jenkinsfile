@@ -6,7 +6,7 @@ pipeline {
         DB_NAME = "selestino"
         DB_USER = "josuejero"
         DB_PASSWORD = "peruano1"
-        DB_HOST = "db"
+        DB_HOST = "localhost"
         GOOGLE_PROJECT_ID = "selestino-434015"
         GOOGLE_COMPUTE_ZONE = "us-central1-a"
         GITHUB_CREDENTIALS = credentials('GITHUB_CREDENTIALS_ID')
@@ -79,6 +79,44 @@ pipeline {
                     } catch (Exception e) {
                         echo "Error during code checkout: ${e.message} [ERROR-101]"
                         error("Failed at stage: Checkout Code [ERROR-101]")
+                    }
+                }
+            }
+        }
+
+        stage('Start PostgreSQL Service and Check Database') {
+            steps {
+                script {
+                    echo "Starting PostgreSQL service and verifying database setup... [DEBUG-012]"
+                    try {
+                        sh '''
+                            sudo service postgresql start
+                            
+                            sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;" 2>/dev/null || echo "Database $DB_NAME already exists"
+                            sudo -u postgres psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';" 2>/dev/null || echo "User $DB_USER already exists"
+                            sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
+                        '''
+                        echo "PostgreSQL service started, and database setup verified. [DEBUG-013]"
+                    } catch (Exception e) {
+                        echo "Error during PostgreSQL setup: ${e.message} [ERROR-102]"
+                        error("Failed at stage: Start PostgreSQL Service and Check Database [ERROR-102]")
+                    }
+                }
+            }
+        }
+
+        stage('Verify Database Connectivity') {
+            steps {
+                script {
+                    echo "Verifying database connectivity... [DEBUG-014]"
+                    try {
+                        sh '''
+                            PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USER -d $DB_NAME -c "SELECT 1;"
+                        '''
+                        echo "Database connectivity verified. [DEBUG-015]"
+                    } catch (Exception e) {
+                        echo "Error verifying database connectivity: ${e.message} [ERROR-103]"
+                        error("Failed at stage: Verify Database Connectivity [ERROR-103]")
                     }
                 }
             }
