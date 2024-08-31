@@ -5,9 +5,11 @@ pipeline {
         PATH = "/usr/bin:$PATH"
         DB_NAME = "selestino"
         DB_USER = "josuejero"
+        DB_PASSWORD = "peruano1"
+        DB_HOST = "db"
         GOOGLE_PROJECT_ID = "selestino-434015"
         GOOGLE_COMPUTE_ZONE = "us-central1-a"
-        GITHUB_CREDENTIALS = credentials('GITHUB_CREDENTIALS_ID')  // Add GitHub credentials to the environment
+        GITHUB_CREDENTIALS = credentials('GITHUB_CREDENTIALS_ID')
     }
 
     stages {
@@ -17,9 +19,11 @@ pipeline {
                     echo "Checking environment variables... [DEBUG-000]"
                     sh 'echo DB_NAME: $DB_NAME'
                     sh 'echo DB_USER: $DB_USER'
+                    sh 'echo DB_PASSWORD: $DB_PASSWORD'
+                    sh 'echo DB_HOST: $DB_HOST'
                     sh 'echo GOOGLE_PROJECT_ID: $GOOGLE_PROJECT_ID'
                     sh 'echo GOOGLE_COMPUTE_ZONE: $GOOGLE_COMPUTE_ZONE'
-                    sh 'echo GITHUB_CREDENTIALS: ****'  // Masked echo of the GitHub credentials
+                    sh 'echo GITHUB_CREDENTIALS: ****'
                 }
             }
         }
@@ -49,17 +53,45 @@ pipeline {
             }
         }
 
-        // Skipped Docker build and related stages
+        stage('Build Docker Images') {
+            steps {
+                script {
+                    echo "Building Docker images... [DEBUG-012]"
+                    sh 'docker-compose build'
+                }
+            }
+        }
 
         stage('Run Tests') {
             steps {
-                echo "Skipping test stage... [DEBUG-014]"
+                script {
+                    echo "Checking for docker-compose.yml file and running tests... [DEBUG-013]"
+                    try {
+                        if (fileExists('docker-compose.yml')) {
+                            echo "docker-compose.yml found in the current directory. Running tests... [DEBUG-014]"
+                            sh 'docker-compose run --rm web pytest tests/'
+                        } else if (fileExists('selestino/docker-compose.yml')) {
+                            echo "docker-compose.yml found in selestino directory. Changing directory and running tests... [DEBUG-015]"
+                            dir('selestino') {
+                                sh 'docker-compose run --rm web pytest tests/'
+                            }
+                        } else {
+                            error("docker-compose.yml not found in either current or selestino directory [ERROR-103]")
+                        }
+                    } catch (Exception e) {
+                        echo "Error during testing: ${e.message} [ERROR-102]"
+                        error("Failed at stage: Run Tests [ERROR-102]")
+                    }
+                }
             }
         }
 
         stage('Deploy to Google Cloud') {
             steps {
-                echo "Skipping deployment to Google Cloud... [DEBUG-018]"
+                script {
+                    echo "Skipping deployment to Google Cloud... [DEBUG-018]"
+                    // Include your deployment logic here when ready
+                }
             }
         }
     }

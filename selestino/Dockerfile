@@ -14,9 +14,5 @@ RUN apt-get update && apt-get install -y postgresql-client iputils-ping
 # Copy the current directory contents into the container at /app
 COPY . /app/
 
-
-# Make port 8000 available to the world outside this container
-EXPOSE 8000
-
-# Define the command to start the Django app
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Run pytest by default
+CMD ["pytest", "tests/"]
