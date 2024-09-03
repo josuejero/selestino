@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-f#1peyf4^2gxuzrv&8c6pee886srz15*640%-vu&xfkc_iiwvz
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['107.178.217.41']
+ALLOWED_HOSTS = ['107.178.217.41', '127.0.0.1', 'localhost', '192.168.0.7', 'www.selestino.com', 'selestino.com']
 
 
 # Application definition
@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'recipeservice',  # <-- Add this line
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
@@ -128,17 +129,22 @@ USE_TZ = True
 
 # settings.py
 
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
-STATIC_ROOT = BASE_DIR / "staticfiles"
-
-
-
+STATIC_URL = 'https://107.178.217.41/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 print("DATABASES:", DATABASES)
+
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_HSTS_SECONDS = 3600
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_BROWSER_XSS_FILTER = True
+# settings.py
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
