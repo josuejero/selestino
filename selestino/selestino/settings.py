@@ -27,7 +27,8 @@ SECRET_KEY = 'django-insecure-f#1peyf4^2gxuzrv&8c6pee886srz15*640%-vu&xfkc_iiwvz
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['107.178.217.41', '127.0.0.1', 'localhost', '192.168.0.7', 'www.selestino.com', 'selestino.com']
+ALLOWED_HOSTS = ['selestino-peru.com', 'www.selestino-peru.com', '107.178.217.41']
+
 
 
 # Application definition
@@ -129,7 +130,7 @@ USE_TZ = True
 
 # settings.py
 
-STATIC_URL = 'https://107.178.217.41/static/'
+STATIC_URL = 'https://selestino-peru.com/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -148,3 +149,5 @@ SECURE_BROWSER_XSS_FILTER = True
 # settings.py
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_TRUSTED_ORIGINS = ['https://selestino-peru.com', 'https://www.selestino-peru.com']
+MEDIA_URL = 'https://selestino-peru.com/media/'
