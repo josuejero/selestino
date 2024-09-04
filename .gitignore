@@ -142,3 +142,6 @@ selestino/staticfiles
 
 .env
 *.pem
+
+key.pem
+cert.pem
