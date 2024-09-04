@@ -24,15 +24,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+SECRET_KEY = 'django-insecure-f#1peyf4^2gxuzrv&8c6pee886srz15*640%-vu&xfkc_iiwvz'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
-
+DEBUG = False
 
 ALLOWED_HOSTS = ['selestino-peru.com', 'www.selestino-peru.com', '107.178.217.41', 'localhost', '127.0.0.1']
 
-APPEND_SLASH = True
 
 
 # Application definition
@@ -155,30 +153,6 @@ USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 CSRF_TRUSTED_ORIGINS = ['https://selestino-peru.com', 'https://www.selestino-peru.com']
 MEDIA_URL = 'https://selestino-peru.com/media/'
-
-
-
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-        },
-        'recipeservice': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-        },
-    },
-}
-
-
 
 
 if __name__ == "__main__":

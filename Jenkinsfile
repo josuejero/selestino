@@ -3,27 +3,18 @@ pipeline {
 
     environment {
         PATH = "/usr/local/bin:$PATH"
-        DB_NAME = "selestino"
-        DB_USER = "josuejero"
-        DB_PASSWORD = "peruano1"
-        DB_HOST = "localhost"
-        GOOGLE_PROJECT_ID = "selestino-434015"
-        GOOGLE_COMPUTE_ZONE = "us-central1-a"
-        GITHUB_CREDENTIALS = credentials('GITHUB_CREDENTIALS_ID')
+        GITHUB_CREDENTIALS = credentials('GITHUB_CREDENTIALS_ID') // Use Jenkins credentials for GitHub
+        DB_CREDENTIALS = credentials('DB_CREDENTIALS_ID') // Securely manage database credentials
     }
 
     stages {
-        stage('Check Environment Variables') {
+        stage('Load Environment Variables') {
             steps {
                 script {
-                    echo "Checking environment variables... [DEBUG-000]"
-                    sh 'echo DB_NAME: $DB_NAME'
-                    sh 'echo DB_USER: $DB_USER'
-                    sh 'echo DB_PASSWORD: $DB_PASSWORD'
-                    sh 'echo DB_HOST: $DB_HOST'
-                    sh 'echo GOOGLE_PROJECT_ID: $GOOGLE_PROJECT_ID'
-                    sh 'echo GOOGLE_COMPUTE_ZONE: $GOOGLE_COMPUTE_ZONE'
-                    sh 'echo GITHUB_CREDENTIALS: ****'
+                    // Securely load .env variables without exposing them in logs
+                    withCredentials([file(credentialsId: 'ENV_FILE_CREDENTIALS', variable: 'ENV_FILE')]) {
+                        sh 'export $(cat $ENV_FILE | xargs)'
+                    }
                 }
             }
         }
@@ -33,7 +24,7 @@ pipeline {
                 script {
                     sh 'echo "User: $(whoami)" [DEBUG-001]'
                     sh 'echo "Current directory: $(pwd)" [DEBUG-002]'
-                    sh 'echo "PATH: $PATH" [DEBUG-003]'
+                    // Removed sensitive environment information logging
                 }
             }
         }
@@ -90,14 +81,19 @@ pipeline {
                     echo "Starting PostgreSQL service and verifying database setup... [DEBUG-012]"
                     try {
                         sh '''
-                            sudo service postgresql start
+                            # Start PostgreSQL without sudo
+                            service postgresql start || echo "PostgreSQL is already running"
                             
-                            sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;" 2>/dev/null || echo "Database $DB_NAME already exists"
-                            sudo -u postgres psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';" 2>/dev/null || echo "User $DB_USER already exists"
-                            sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
-                            sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON SCHEMA public TO $DB_USER;"
-                            sudo -u postgres psql -c "ALTER USER $DB_USER WITH SUPERUSER;"
-                            sudo -u postgres psql -c "ALTER SCHEMA public OWNER TO $DB_USER;"
+                            # Securely create the database and user
+                            DB_NAME=$(echo $DB_NAME | sed 's/[^a-zA-Z0-9_]//g') # Sanitize DB_NAME
+                            DB_USER=$(echo $DB_USER | sed 's/[^a-zA-Z0-9_]//g') # Sanitize DB_USER
+                            
+                            psql -h $DB_HOST -U postgres -c "CREATE DATABASE $DB_NAME;" 2>/dev/null || echo "Database $DB_NAME already exists"
+                            psql -h $DB_HOST -U postgres -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';" 2>/dev/null || echo "User $DB_USER already exists"
+                            psql -h $DB_HOST -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
+                            psql -h $DB_HOST -U postgres -c "GRANT ALL PRIVILEGES ON SCHEMA public TO $DB_USER;"
+                            psql -h $DB_HOST -U postgres -c "ALTER USER $DB_USER WITH SUPERUSER;"
+                            psql -h $DB_HOST -U postgres -c "ALTER SCHEMA public OWNER TO $DB_USER;"
                         '''
                         echo "PostgreSQL service started, and database setup verified. [DEBUG-013]"
                     } catch (Exception e) {
@@ -107,7 +103,6 @@ pipeline {
                 }
             }
         }
-
 
         stage('Verify Database Connectivity') {
             steps {
@@ -138,7 +133,7 @@ pipeline {
                         echo "Migrations applied successfully. [DEBUG-020]"
                     } catch (Exception e) {
                         echo "Error applying migrations: ${e.message} [ERROR-107]"
-                        error("Failed at stage: Apply Migrations [ERROR-107]")
+                        error("Failed at stage: Apply Migrations [ERROR-107]"
                     }
                 }
             }

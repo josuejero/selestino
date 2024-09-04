@@ -18,9 +18,9 @@ services:
   db:
     image: postgres:13
     environment:
-      POSTGRES_DB: selestino
-      POSTGRES_USER: josuejero
-      POSTGRES_PASSWORD: peruano1
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     networks:

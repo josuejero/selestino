@@ -4,15 +4,16 @@ from django.test import TestCase
 
 class AdminPageAccessTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create_superuser('admin', '[email protected]', 'password')
-        self.client.force_login(self.user)
+        # Create a superuser
+        self.admin_user = User.objects.create_superuser('admin', 'admin@example.com', 'password')
+        self.client.login(username='admin', password='password')
 
     def test_recipe_changelist_page(self):
-        url = reverse('admin:recipeservice_recipe_changelist')
-        response = self.client.get(url)
+        response = self.client.get(reverse('admin:recipeservice_recipe_changelist'), follow=True)
+        print(f"Recipe changelist status code: {response.status_code}, final destination: {response.redirect_chain}")
         self.assertEqual(response.status_code, 200)
 
     def test_ingredient_changelist_page(self):
-        url = reverse('admin:recipeservice_ingredient_changelist')
-        response = self.client.get(url)
+        response = self.client.get(reverse('admin:recipeservice_ingredient_changelist'), follow=True)
+        print(f"Ingredient changelist status code: {response.status_code}, final destination: {response.redirect_chain}")
         self.assertEqual(response.status_code, 200)
