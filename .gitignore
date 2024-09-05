@@ -1,3 +1,5 @@
+
+
 # Logs
 logs
 *.log
@@ -133,6 +135,7 @@ dist
 jenkins_backup.tar
 jenkins/jenkins_backup.tar
 venv
+admin
 
 env/
 __pycache__/
@@ -145,3 +148,10 @@ selestino/staticfiles
 
 key.pem
 cert.pem
+
+
+
+*.pem
+project_structure_and_code.txt
+*.pyc
+db.sqlite3
