@@ -26,4 +26,33 @@ def add_recipe(request):
             return redirect('recipe_list')
     return render(request, 'recipeservice/recipe_form.html', {'form': form})
 
+def delete_recipe(request, id):
+    recipe = Recipe.objects.get(id=id)
+    if request.method == 'POST':
+        recipe.delete()
+        return redirect('recipe_list')
+    return render(request, 'recipeservice/recipe_confirm_delete.html', {'recipe': recipe})
 
+def edit_recipe(request, id):
+    recipe = Recipe.objects.get(id=id)
+    form = RecipeForm(instance=recipe)
+    if request.method == 'POST':
+        form = RecipeForm(request.POST, instance=recipe)
+        if form.is_valid():
+            form.save()
+            return redirect('recipe_detail', id=recipe.id)
+    return render(request, 'recipeservice/recipe_form.html', {'form': form, 'recipe': recipe})
+
+
+def add_review(request, recipe_id):
+    recipe = Recipe.objects.get(id=recipe_id)
+    if request.method == 'POST':
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.recipe = recipe
+            review.save()
+            return redirect('recipe_detail', id=recipe_id)
+    else:
+        form = ReviewForm()
+    return render(request, 'recipeservice/add_review.html', {'form': form})

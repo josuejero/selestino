@@ -30,7 +30,9 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 
-ALLOWED_HOSTS = ['selestino-peru.com', 'www.selestino-peru.com', '107.178.217.41', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'selestino-peru.com', 'www.selestino-peru.com', '107.178.217.41']
+
+
 
 APPEND_SLASH = True
 
@@ -138,6 +140,9 @@ STATIC_URL = 'https://selestino-peru.com/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

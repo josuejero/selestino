@@ -1,0 +1,18 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Ingredient</title>
+    <link rel="stylesheet" href="{% static 'recipeservice/css/style.css' %}">
+</head>
+<body>
+    <h1>Add a New Ingredient</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}  <!-- Django form will auto-populate fields here -->
+        <button type="submit">Add Ingredient</button>
+    </form>
+</body>
+</html>
