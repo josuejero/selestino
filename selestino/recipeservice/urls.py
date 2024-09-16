@@ -1,20 +1,20 @@
 from django.urls import path
 from . import views
 import logging
-from django.conf import settings  # Add this line
+from django.conf import settings  
 from django.conf.urls.static import static
 from django.contrib import admin
+import time
 
 logger = logging.getLogger(__name__)
 
-# URLs in recipeservice
 def log_request(request, view_name):
-    logger.debug(f"Request received for view: {view_name}, path: {request.path}")
+    logger.debug(f"Request received for view: {view_name}, Method: {request.method}, Path: {request.path}, Time: {time.ctime()}")
 
 urlpatterns = [
-    path('', views.recipe_list, name='recipe_list'),  # trailing slash is implicit on the root URL
-    path('recipe/<int:id>/', views.recipe_detail, name='recipe_detail'),  # Add trailing slash
-    path('recipe/add/', views.add_recipe, name='add_recipe'),  # Add trailing slash
+    path('', views.recipe_list, name='recipe_list'),  
+    path('recipe/<int:id>/', views.recipe_detail, name='recipe_detail'),
+    path('recipe/add/', views.add_recipe, name='add_recipe'),
     path('recipe/<int:recipe_id>/review/', views.add_review, name='add_review'),
 
 ]

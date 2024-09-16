@@ -3,7 +3,7 @@ import os
 def list_files(startpath):
     with open('project_structure_and_code.txt', 'w') as f:
         for root, dirs, files in os.walk(startpath):
-            # Exclude the venv directory
+            
             dirs[:] = [d for d in dirs if d != 'venv']
             level = root.replace(startpath, '').count(os.sep)
             indent = ' ' * 4 * (level)
@@ -12,7 +12,7 @@ def list_files(startpath):
             for file in files:
                 f.write('{}{}\n'.format(subindent, file))
                 if file.endswith('.py'):
-                    f.write('\n{}# Content of {}:\n'.format(subindent, file))
+                    f.write('\n{}Content of {}:\n'.format(subindent, file))
                     with open(os.path.join(root, file), 'r') as py_file:
                         for line in py_file:
                             f.write('{}{}'.format(subindent, line))

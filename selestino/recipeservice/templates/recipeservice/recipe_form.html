@@ -10,7 +10,7 @@
 <body>
     <div class="form-container">
         <h1>Add a New Recipe</h1>
-        <form method="post">
+        <form method="post" action="{% url 'recipe_add' %}">
             {% csrf_token %}
             {{ form.as_p }}
             <button type="submit">Add Recipe</button>

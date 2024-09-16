@@ -12,7 +12,7 @@ class RecipeModelTest(TestCase):
         self.assertEqual(str(recipe), "Pasta")
 
     def test_total_time_calculation(self):
-        # Create a Recipe instance with specific prep_time and cook_time
+        
         recipe = Recipe.objects.create(
             title="Pasta",
             prep_time=10,
@@ -21,7 +21,7 @@ class RecipeModelTest(TestCase):
             cuisine_type="Italian",
             difficulty="Medium"
         )
-        # Save the recipe and check that total_time is correctly calculated
+        
         recipe.save()
         self.assertEqual(recipe.total_time, 30)
 
@@ -46,15 +46,15 @@ class ModelStrMethodTests(TestCase):
         
 class ManyToManyRelationshipTests(TestCase):
     def test_add_ingredients_to_recipe(self):
-        # Create Ingredient instances
+        
         tomato = Ingredient.objects.create(name="Tomato", quantity="2")
         pasta = Ingredient.objects.create(name="Pasta", quantity="200g")
 
-        # Create a Recipe and add ingredients
+        
         recipe = Recipe.objects.create(title="Pasta")
         recipe.ingredients.add(tomato, pasta)
 
-        # Retrieve the recipe and verify the ingredients
+        
         recipe = Recipe.objects.get(id=recipe.id)
         self.assertIn(tomato, recipe.ingredients.all())
         self.assertIn(pasta, recipe.ingredients.all())
@@ -62,11 +62,11 @@ class ManyToManyRelationshipTests(TestCase):
 
 class ForeignKeyRelationshipTests(TestCase):
     def test_review_links_to_recipe(self):
-        # Create a Recipe instance
+        
         recipe = Recipe.objects.create(title="Pasta", description="Tasty pasta")
 
-        # Create a Review instance linked to the recipe
+        
         review = Review.objects.create(recipe=recipe, user="John Doe", rating=5)
 
-        # Retrieve the review and verify it links to the correct recipe
+        
         self.assertEqual(review.recipe, recipe)

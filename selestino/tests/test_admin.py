@@ -31,5 +31,5 @@ class RecipeAdminTest(TestCase):
 class ReviewInlineTest(TestCase):
     def test_inline(self):
         admin_class = admin.site._registry[Recipe]
-        print(admin_class.inlines)  # Add this line for debugging
+        print(admin_class.inlines)  
         self.assertTrue(ReviewInline in admin_class.inlines)

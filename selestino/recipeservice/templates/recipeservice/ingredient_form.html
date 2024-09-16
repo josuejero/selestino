@@ -9,9 +9,9 @@
 </head>
 <body>
     <h1>Add a New Ingredient</h1>
-    <form method="post">
+    <form method="post" action="{% url 'ingredient_add' %}">
         {% csrf_token %}
-        {{ form.as_p }}  <!-- Django form will auto-populate fields here -->
+        {{ form.as_p }}  
         <button type="submit">Add Ingredient</button>
     </form>
 </body>

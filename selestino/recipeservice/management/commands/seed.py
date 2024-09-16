@@ -9,7 +9,7 @@ class Command(BaseCommand):
             title='Tomato Soup', 
             description='A delicious tomato soup', 
             instructions='Boil the ingredients...',
-            prep_time=10,  # Add prep time
-            cook_time=20   # Add cook time
+            prep_time=10,  
+            cook_time=20   
         )
         recipe.ingredients.add(ingredient1, ingredient2)

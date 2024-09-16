@@ -1,5 +1,3 @@
-# wait-for-it.sh
-#!/bin/bash
 set -e
 host="$1"
 shift

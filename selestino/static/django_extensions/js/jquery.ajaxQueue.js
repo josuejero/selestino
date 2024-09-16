@@ -1,44 +1,5 @@
-/**
- * Ajax Queue Plugin
- */
 
-/**
 
-<script>
-$(function(){
-	jQuery.ajaxQueue({
-		url: "test.php",
-		success: function(html){ jQuery("ul").append(html); }
-	});
-	jQuery.ajaxQueue({
-		url: "test.php",
-		success: function(html){ jQuery("ul").append(html); }
-	});
-	jQuery.ajaxSync({
-		url: "test.php",
-		success: function(html){ jQuery("ul").append("<b>"+html+"</b>"); }
-	});
-	jQuery.ajaxSync({
-		url: "test.php",
-		success: function(html){ jQuery("ul").append("<b>"+html+"</b>"); }
-	});
-});
-</script>
-<ul style="position: absolute; top: 5px; right: 5px;"></ul>
-
- */
-/*
- * Queued Ajax requests.
- * A new Ajax request won't be started until the previous queued
- * request has finished.
- */
-
-/*
- * Synced Ajax requests.
- * The Ajax request will happen as soon as you call this method, but
- * the callbacks (success/error/complete) won't fire until all previous
- * synced requests have been completed.
- */
 
 
 (function(jQuery) {
@@ -51,7 +12,7 @@ $(function(){
 	var syncedData = [];
 
 	jQuery.ajax = function(settings) {
-		// create settings for compatibility with ajaxSetup
+		
 		settings = jQuery.extend(settings, jQuery.extend({}, jQuery.ajaxSettings, settings));
 
 		var port = settings.port;

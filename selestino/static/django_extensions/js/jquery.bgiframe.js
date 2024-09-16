@@ -1,17 +1,12 @@
-/*! Copyright (c) 2010 Brandon Aaron (http://brandon.aaron.sh/)
- * Licensed under the MIT License (LICENSE.txt).
- *
- * Version 2.1.2
- */
 
 (function($){
 
 $.fn.bgiframe = ($.browser.msie && /msie 6\.0/i.test(navigator.userAgent) ? function(s) {
     s = $.extend({
-        top     : 'auto', // auto == .currentStyle.borderTopWidth
-        left    : 'auto', // auto == .currentStyle.borderLeftWidth
-        width   : 'auto', // auto == offsetWidth
-        height  : 'auto', // auto == offsetHeight
+        top     : 'auto', 
+        left    : 'auto', 
+        width   : 'auto', 
+        height  : 'auto', 
         opacity : true,
         src     : 'javascript:false;'
     }, s);
@@ -29,7 +24,6 @@ $.fn.bgiframe = ($.browser.msie && /msie 6\.0/i.test(navigator.userAgent) ? func
     });
 } : function() { return this; });
 
-// old alias
 $.fn.bgIframe = $.fn.bgiframe;
 
 function prop(n) {
