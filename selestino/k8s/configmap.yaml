@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: selestino-config
-data:
-  DB_HOST: 
-  DB_NAME: selestino
-  DB_USER: josuejero
