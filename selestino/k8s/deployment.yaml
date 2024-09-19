@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: selestino-deployment
+  labels:
+    app: selestino
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: selestino
+  template:
+    metadata:
+      labels:
+        app: selestino
+    spec:
+      containers:
+        - name: selestino
+          image: 
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: selestino-config
+            - secretRef:
+                name: selestino-secret

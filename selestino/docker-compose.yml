@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    command: bash -c "./wait-for-it.sh db && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - app_data:/app  
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD-SHELL", "python manage.py check"]  
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: always  
+    networks:
+      - selestino-network  
+
+  db:
+    image: postgres:13.3  
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    networks:
+      - selestino-network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${DB_USER}", "-d", "${DB_NAME}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: always  
+
+volumes:
+  postgres_data:
+    driver: local  
+  app_data:
+
+networks:
+  selestino-network:
+    driver: bridge
+    internal: true  
